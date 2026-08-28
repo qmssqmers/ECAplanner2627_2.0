@@ -1,1324 +1,1416 @@
 <!DOCTYPE html>
 <html lang="zh-Hant-HK">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>港澳信義會慕德中學 - 課外活動日期規劃系統 (Firebase 雲端版)</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
-    body {
-      font-family: 'Noto Sans TC', sans-serif;
-    }
-    .scrollbar-thin::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    .scrollbar-thin::-webkit-scrollbar-track {
-      background: #f1f1f1;
-    }
-    .scrollbar-thin::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 3px;
-    }
-    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>港澳信義會慕德中學 - 課外活動日期規劃系統 (Firebase 雲端版)</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .collapse-transition {
+            transition: max-height 0.35s ease-in-out, opacity 0.25s ease;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+        }
+        .collapse-transition.open {
+            max-height: 2000px;
+            opacity: 1;
+        }
+        .admin-panel-tab.active {
+            border-bottom: 3px solid #2563eb;
+            color: #1e293b;
+            font-weight: 700;
+        }
+        .admin-panel-tab {
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            color: #64748b;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .admin-panel-tab:hover {
+            color: #1e293b;
+            background: #f8fafc;
+        }
+        .venue-badge {
+            background: #eef2ff;
+            color: #4338ca;
+            padding: 0.2rem 0.7rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border: 1px solid #c7d2fe;
+        }
+    </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
 
-  <!-- Header -->
-  <header class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white shadow-md sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
-      <div class="flex items-center gap-3">
-        <div class="bg-white p-2 rounded-full shadow-inner">
-          <svg class="w-8 h-8 text-blue-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            <path d="M12 8v8M9 11h6"/>
-          </svg>
-        </div>
-        <div>
-          <h1 class="text-xl sm:text-2xl font-bold tracking-wide">港澳信義會慕德中學</h1>
-          <p class="text-xs sm:text-sm text-blue-100 font-light">二零二六至二零二七年度課外活動 (ECA) 規劃系統 (Firebase 雲端版)</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-3">
-        <span class="bg-blue-600/50 text-white border border-blue-400/30 px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 shadow-sm">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          雲端即時版 V13
-        </span>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main Content Container -->
-  <main class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-    
-    <!-- Toast Notification Holder -->
-    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-    <!-- Overview Statistics Dashboard -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 hover:border-blue-300 transition-colors">
-        <div class="p-3 bg-blue-100 text-blue-600 rounded-lg">
-          <i data-lucide="layers" class="w-6 h-6"></i>
-        </div>
-        <div>
-          <p class="text-xs text-slate-500 font-medium">可選活動項目</p>
-          <p class="text-2xl font-extrabold text-slate-900" id="stat-total-ecas">36 個</p>
-        </div>
-      </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 hover:border-emerald-300 transition-colors">
-        <div class="p-3 bg-emerald-100 text-emerald-600 rounded-lg">
-          <i data-lucide="calendar-check" class="w-6 h-6"></i>
-        </div>
-        <div>
-          <p class="text-xs text-slate-500 font-medium">目前已選取總堂數</p>
-          <p class="text-2xl font-extrabold text-slate-900" id="stat-total-dates">0 堂</p>
-        </div>
-      </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 hover:border-indigo-300 transition-colors">
-        <div class="p-3 bg-indigo-100 text-indigo-600 rounded-lg">
-          <i data-lucide="users" class="w-6 h-6"></i>
-        </div>
-        <div>
-          <p class="text-xs text-slate-500 font-medium">已規劃之活動組別</p>
-          <p class="text-2xl font-extrabold text-slate-900" id="stat-active-ecas">0 組</p>
-        </div>
-      </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 hover:border-amber-300 transition-colors">
-        <div class="p-3 bg-amber-100 text-amber-600 rounded-lg">
-          <i data-lucide="clock" class="w-6 h-6"></i>
-        </div>
-        <div>
-          <p class="text-xs text-slate-500 font-medium">含特別時間表（黃色）</p>
-          <p class="text-2xl font-extrabold text-slate-900" id="stat-special-dates">0 堂</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Layout Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-      <!-- Left Panel: Configurations & ECA Selector (4 cols) -->
-      <section class="lg:col-span-4 flex flex-col gap-6">
-        
-        <!-- Section 1: Teacher & Firebase Cloud Status -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-          <div class="flex items-center gap-2 pb-3 mb-4 border-b border-slate-100">
-            <i data-lucide="cloud" class="w-5 h-5 text-blue-600"></i>
-            <h2 class="font-bold text-base text-slate-900">1. 雲端同步與後台設定</h2>
-          </div>
-          
-          <div class="flex flex-col gap-4">
-            <!-- Connection Status Badge -->
-            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
-              <span class="text-xs font-semibold text-slate-500 block mb-1">Firebase 連線狀態：</span>
-              <div class="flex items-center gap-2">
-                <span id="connection-status-dot" class="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></span>
-                <span id="connection-status-text" class="text-xs font-bold text-slate-600">正在初始化連線...</span>
-              </div>
+    <!-- ==================== HEADER ==================== -->
+    <header class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-white p-2 rounded-full shadow-inner">
+                    <svg class="w-8 h-8 text-blue-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="M12 8v8M9 11h6"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-wide">港澳信義會慕德中學</h1>
+                    <p class="text-xs sm:text-sm text-blue-100 font-light">二零二六至二零二七年度課外活動 (ECA) 規劃系統 (Firebase 雲端版)</p>
+                </div>
             </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1.5">負責同工姓名 <span class="text-rose-500">*</span></label>
-              <div class="relative">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                  <i data-lucide="user" class="w-4 h-4"></i>
+            <div class="flex items-center gap-3">
+                <button onclick="openAdminPanel()" class="bg-amber-500 hover:bg-amber-400 text-white px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow transition-colors border border-amber-400/30">
+                    <i data-lucide="shield" class="w-4 h-4"></i> 管理員
+                </button>
+                <span class="bg-blue-600/50 text-white border border-blue-400/30 px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    雲端即時版 V14
                 </span>
-                <input type="text" id="teacher-name" placeholder="例如：LHW2/LS" 
-                       class="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
-              </div>
-              <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">請輸入您的簡稱/姓名，在雲端進行的修改都會記錄您的名字。</p>
             </div>
-          </div>
+        </div>
+    </header>
+
+    <!-- ==================== MAIN ==================== -->
+    <main class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+
+        <!-- Toast -->
+        <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+        <!-- ===== STATS ===== -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 hover:border-blue-300 transition-colors">
+                <div class="p-3 bg-blue-100 text-blue-600 rounded-lg"><i data-lucide="layers" class="w-6 h-6"></i></div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium">可選活動項目</p>
+                    <p class="text-2xl font-extrabold text-slate-900" id="stat-total-ecas">0 個</p>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 hover:border-emerald-300 transition-colors">
+                <div class="p-3 bg-emerald-100 text-emerald-600 rounded-lg"><i data-lucide="calendar-check" class="w-6 h-6"></i></div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium">目前已選取總堂數</p>
+                    <p class="text-2xl font-extrabold text-slate-900" id="stat-total-dates">0 堂</p>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 hover:border-indigo-300 transition-colors">
+                <div class="p-3 bg-indigo-100 text-indigo-600 rounded-lg"><i data-lucide="users" class="w-6 h-6"></i></div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium">已規劃之活動組別</p>
+                    <p class="text-2xl font-extrabold text-slate-900" id="stat-active-ecas">0 組</p>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 hover:border-amber-300 transition-colors">
+                <div class="p-3 bg-amber-100 text-amber-600 rounded-lg"><i data-lucide="clock" class="w-6 h-6"></i></div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium">含特別時間表（黃色）</p>
+                    <p class="text-2xl font-extrabold text-slate-900" id="stat-special-dates">0 堂</p>
+                </div>
+            </div>
         </div>
 
-        <!-- Section 2: ECA List Panel -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex-1 flex flex-col min-h-[350px]">
-          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-            <div class="flex items-center gap-2">
-              <i data-lucide="check-square" class="w-5 h-5 text-blue-600"></i>
-              <h2 class="font-bold text-base text-slate-900">2. 選擇課外活動項目</h2>
-            </div>
-            <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs" id="eca-count-badge">36 個</span>
-          </div>
+        <!-- ===== LAYOUT GRID ===== -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-          <!-- Search Input -->
-          <div class="relative mb-3">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-              <i data-lucide="search" class="w-4 h-4"></i>
-            </span>
-            <input type="text" id="search-eca" placeholder="搜尋活動名稱..." oninput="filterEcas()" 
-                   class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
-          </div>
+            <!-- ===== LEFT PANEL (4 cols) ===== -->
+            <section class="lg:col-span-4 flex flex-col gap-6">
 
-          <!-- List box (Scrollable) -->
-          <div class="flex-1 overflow-y-auto scrollbar-thin border border-slate-100 rounded-lg p-1 bg-slate-50 max-h-[320px]" id="eca-list-container">
-            <!-- Dynamically populated -->
-          </div>
-        </div>
-        <!-- 4. Daily View / 單日查詢 -->
-<div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col mt-6">
-  <div class="flex items-center gap-2 pb-3 mb-4 border-b border-slate-100">
-    <i data-lucide="search-check" class="w-5 h-5 text-emerald-600"></i>
-    <h3 class="font-bold text-base text-slate-900">4. 單日活動與場地查詢</h3>
-  </div>
-  <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-    <div class="flex-shrink-0">
-      <label class="block text-xs font-semibold text-slate-600 mb-1.5">選擇欲查詢之日期</label>
-      <input type="date" id="daily-query-date" onchange="renderDailyView()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium text-slate-700">
-    </div>
-    <p class="text-xs text-slate-400 mt-2 sm:mt-6">系統會即時過濾並顯示該日期的所有活動與場地安排。</p>
-  </div>
-  <div class="mt-4 bg-slate-50 border border-slate-100 rounded-xl p-4 min-h-[150px]">
-    <div id="daily-view-results" class="flex flex-col gap-2">
-      <div class="text-center py-6 text-slate-400 text-xs flex flex-col items-center gap-2"><i data-lucide="calendar-search" class="w-8 h-8 text-slate-300"></i> 請選擇日期進行查詢。</div>
-    </div>
-  </div>
-</div>
-      </section>
-
-      <!-- Middle & Right Combined Main Planning Workspace (8 cols) -->
-      <section class="lg:col-span-8 flex flex-col gap-6">
-        
-        <!-- Calendar & Month Picker Block -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          
-          <!-- Month Picker Tabs (2026 Sep - 2027 Jul) -->
-          <div class="border-b border-slate-100 pb-3 mb-5 overflow-x-auto scrollbar-thin flex gap-1.5" id="month-tabs-container">
-            <!-- JS populated tabs -->
-          </div>
-
-          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-            <div>
-              <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <i data-lucide="calendar" class="w-5 h-5 text-blue-600"></i>
-                <span id="current-month-title">2026年 9月</span>
-                <span id="active-eca-label" class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">請先選擇活動項目</span>
-              </h3>
-              <p class="text-xs text-slate-400 mt-1">點擊可選取的日期格即可標記該日期（修改會實時同步到 Firebase 雲端）。</p>
-            </div>
-            
-            <div class="flex gap-2 self-stretch sm:self-auto">
-              <button onclick="prevMonth()" class="p-2 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors">
-                <i data-lucide="chevron-left" class="w-4 h-4"></i>
-              </button>
-              <button onclick="nextMonth()" class="p-2 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors">
-                <i data-lucide="chevron-right" class="w-4 h-4"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Color Legends -->
-          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 p-3 bg-slate-50 rounded-xl mb-4 text-xs font-medium border border-slate-100">
-            <div class="flex items-center gap-1.5">
-              <span class="w-3.5 h-3.5 rounded bg-slate-200 border border-slate-300 inline-block"></span>
-              <span class="text-slate-500">灰色 (不能進行)</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <span class="w-3.5 h-3.5 rounded bg-amber-100 border border-amber-300 inline-block"></span>
-              <span class="text-slate-600">淺黃 (特別 14:30)</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <span class="w-3.5 h-3.5 rounded bg-pink-100 border border-pink-300 inline-block"></span>
-              <span class="text-slate-600">淺粉紅 (禮堂暫停)</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <span class="w-3.5 h-3.5 rounded bg-white border border-slate-200 inline-block"></span>
-              <span class="text-slate-600">白色 (常規上課)</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <span class="w-3.5 h-3.5 rounded bg-emerald-500 border border-emerald-600 inline-block"></span>
-              <span class="text-emerald-700 font-semibold">綠色 (已安排)</span>
-            </div>
-          </div>
-
-          <!-- Calendar Grid Header -->
-          <div class="grid grid-cols-7 gap-1 text-center font-bold text-xs text-slate-500 py-2 border-b border-slate-100">
-            <div>日</div>
-            <div>一</div>
-            <div>二</div>
-            <div>三</div>
-            <div>四</div>
-            <div>五</div>
-            <div>六</div>
-          </div>
-
-          <!-- Calendar Grid Days -->
-          <div class="grid grid-cols-7 gap-1.5 mt-2 min-h-[280px]" id="calendar-days-grid">
-            <!-- Dynamically Rendered Calendar Days -->
-          </div>
-
-        </div>
-
-        <!-- Selected Dates Summary Table & Save/Export -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex-1 flex flex-col">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-4 border-b border-slate-100">
-            <div class="flex items-center gap-2">
-              <i data-lucide="clipboard-list" class="w-5 h-5 text-blue-600"></i>
-              <h3 class="font-bold text-base text-slate-900">3. 目前已安排日期一覽</h3>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <button onclick="clearSelectedEcaDates()" class="px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-100 rounded-lg transition-colors flex items-center gap-1">
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 清空當前組別
-              </button>
-              <button onclick="clearAllData()" class="px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors flex items-center gap-1">
-                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> 重設雲端所有資料
-              </button>
-            </div>
-          </div>
-
-          <!-- Selected Dates Table Container -->
-          <div class="flex-1 overflow-x-auto scrollbar-thin mb-4">
-            <table class="w-full text-sm text-left border-collapse min-w-[600px]">
-              <thead>
-                <tr class="bg-slate-50 text-slate-500 text-xs font-semibold border-b border-slate-100 uppercase">
-                  <th class="py-3 px-4">活動項目</th>
-                  <th class="py-3 px-4">安排日期</th>
-                  <th class="py-3 px-4">活動時間安排</th>
-                  <th class="py-3 px-4">自定義備註 / 課室地點</th>
-                  <th class="py-3 px-4">規劃人</th>
-                  <th class="py-3 px-4 text-center">操作</th>
-                </tr>
-              </thead>
-              <tbody id="scheduled-table-body">
-                <!-- Row template inside JS -->
-                <tr>
-                  <td colspan="6" class="py-8 text-center text-slate-400 text-xs">
-                    <div class="flex flex-col items-center justify-center gap-2">
-                      <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
-                      <span>載入雲端資料中，或尚未選擇任何日期。</span>
+                <!-- Cloud & Teacher -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center gap-2 pb-3 mb-4 border-b border-slate-100">
+                        <i data-lucide="cloud" class="w-5 h-5 text-blue-600"></i>
+                        <h2 class="font-bold text-base text-slate-900">1. 雲端同步與後台設定</h2>
                     </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-<!-- Actions Grid Panel -->
-<div class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
-  <div class="text-xs text-slate-500">
-    <p class="font-medium text-slate-700">資料匯入與匯出選項</p>
-    <p class="mt-0.5">系統支援將舊版 CSV 匯入，及多格式進階匯出。</p>
-  </div>
-  <div class="flex flex-wrap gap-2 w-full md:w-auto justify-end">
-    <input type="file" id="csv-upload" accept=".csv" class="hidden" onchange="handleCSVImport(event)">
-    <button onclick="document.getElementById('csv-upload').click()" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-sm rounded-lg transition-all shadow-sm flex items-center justify-center gap-1.5">
-      <i data-lucide="upload" class="w-4 h-4"></i> 匯入舊版資料(CSV)
-    </button>
-    <button onclick="openExportModal()" class="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm rounded-lg transition-all shadow-md flex items-center justify-center gap-1.5">
-      <i data-lucide="download" class="w-4 h-4"></i> 自訂與匯出資料
-    </button>
-  </div>
-</div>
-          <!-- Actions Grid Panel -->
-          <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="text-xs text-slate-500">
-              <p class="font-medium">系統已開啟 Firebase Cloud 即時同步服務。</p>
-              <p class="mt-0.5">任何改動都會自動備份並廣播給其他老師。</p>
-            </div>
-            <div class="flex flex-wrap gap-2 w-full md:w-auto justify-end">
-              <button onclick="exportToWord()" class="flex-1 md:flex-initial px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm rounded-lg transition-all shadow-md flex items-center justify-center gap-1.5">
-                <i data-lucide="file-text" class="w-4 h-4"></i> 匯出為 Word 檔
-              </button>
-              <button onclick="exportToCSV()" class="flex-1 md:flex-initial px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm rounded-lg transition-all shadow-md flex items-center justify-center gap-1.5">
-                <i data-lucide="download" class="w-4 h-4"></i> 匯出為 CSV
-              </button>
-            </div>
-          </div>
+                    <div class="flex flex-col gap-4">
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <span class="text-xs font-semibold text-slate-500 block mb-1">Firebase 連線狀態：</span>
+                            <div class="flex items-center gap-2">
+                                <span id="connection-status-dot" class="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></span>
+                                <span id="connection-status-text" class="text-xs font-bold text-slate-600">正在初始化連線...</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1.5">負責同工姓名 <span class="text-rose-500">*</span></label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i data-lucide="user" class="w-4 h-4"></i></span>
+                                <input type="text" id="teacher-name" placeholder="例如：LHW2/LS"
+                                class="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">請輸入您的簡稱/姓名，在雲端進行的修改都會記錄您的名字。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ECA List -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex-1 flex flex-col min-h-[350px]">
+                    <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="check-square" class="w-5 h-5 text-blue-600"></i>
+                            <h2 class="font-bold text-base text-slate-900">2. 選擇課外活動項目</h2>
+                        </div>
+                        <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs" id="eca-count-badge">0 個</span>
+                    </div>
+                    <div class="relative mb-3">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i data-lucide="search" class="w-4 h-4"></i></span>
+                        <input type="text" id="search-eca" placeholder="搜尋活動名稱..." oninput="filterEcas()"
+                        class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                    </div>
+                    <div class="flex-1 overflow-y-auto scrollbar-thin border border-slate-100 rounded-lg p-1 bg-slate-50 max-h-[320px]" id="eca-list-container">
+                        <!-- 動態載入 -->
+                    </div>
+                </div>
+
+                <!-- Daily Query -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                    <div class="flex items-center gap-2 pb-3 mb-4 border-b border-slate-100">
+                        <i data-lucide="search-check" class="w-5 h-5 text-emerald-600"></i>
+                        <h3 class="font-bold text-base text-slate-900">4. 單日活動與場地查詢</h3>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                        <div class="flex-shrink-0">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1.5">選擇欲查詢之日期</label>
+                            <input type="date" id="daily-query-date" onchange="renderDailyView()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium text-slate-700">
+                        </div>
+                        <p class="text-xs text-slate-400 mt-2 sm:mt-6">系統會即時過濾並顯示該日期的所有活動與場地安排。</p>
+                    </div>
+                    <div class="mt-4 bg-slate-50 border border-slate-100 rounded-xl p-4 min-h-[150px]">
+                        <div id="daily-view-results" class="flex flex-col gap-2">
+                            <div class="text-center py-6 text-slate-400 text-xs flex flex-col items-center gap-2"><i data-lucide="calendar-search" class="w-8 h-8 text-slate-300"></i> 請選擇日期進行查詢。</div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ===== RIGHT PANEL (8 cols) ===== -->
+            <section class="lg:col-span-8 flex flex-col gap-6">
+
+                <!-- Calendar -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="border-b border-slate-100 pb-3 mb-5 overflow-x-auto scrollbar-thin flex gap-1.5" id="month-tabs-container">
+                        <!-- JS 產生 -->
+                    </div>
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <i data-lucide="calendar" class="w-5 h-5 text-blue-600"></i>
+                                <span id="current-month-title">2026年 9月</span>
+                                <span id="active-eca-label" class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">請先選擇活動項目</span>
+                            </h3>
+                            <p class="text-xs text-slate-400 mt-1">點擊可選取的日期格即可標記該日期（修改會實時同步到 Firebase 雲端）。</p>
+                        </div>
+                        <div class="flex gap-2 self-stretch sm:self-auto">
+                            <button onclick="prevMonth()" class="p-2 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                            <button onclick="nextMonth()" class="p-2 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <!-- Legends -->
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 p-3 bg-slate-50 rounded-xl mb-4 text-xs font-medium border border-slate-100">
+                        <div class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-slate-200 border border-slate-300 inline-block"></span><span class="text-slate-500">灰色 (不能進行)</span></div>
+                        <div class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-amber-100 border border-amber-300 inline-block"></span><span class="text-slate-600">淺黃 (特別 14:30)</span></div>
+                        <div class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-pink-100 border border-pink-300 inline-block"></span><span class="text-slate-600">淺粉紅 (禮堂暫停)</span></div>
+                        <div class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-white border border-slate-200 inline-block"></span><span class="text-slate-600">白色 (常規上課)</span></div>
+                        <div class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-500 border border-emerald-600 inline-block"></span><span class="text-emerald-700 font-semibold">綠色 (已安排)</span></div>
+                    </div>
+                    <!-- Grid Header -->
+                    <div class="grid grid-cols-7 gap-1 text-center font-bold text-xs text-slate-500 py-2 border-b border-slate-100">
+                        <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1.5 mt-2 min-h-[280px]" id="calendar-days-grid">
+                        <!-- 動態產生 -->
+                    </div>
+                </div>
+
+                <!-- ===== 3. 目前已安排日期一覽 (摺疊) ===== -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <!-- 標題列 (點擊切換) -->
+                    <div onclick="toggleSchedulePanel()" class="flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 transition-colors select-none">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="clipboard-list" class="w-5 h-5 text-blue-600"></i>
+                            <h3 class="font-bold text-base text-slate-900">3. 目前已安排日期一覽</h3>
+                            <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-semibold" id="schedule-count-badge">0 筆</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span id="collapse-indicator" class="text-slate-400 text-sm font-medium transition-transform duration-300 rotate-0">▼ 展開</span>
+                            <i data-lucide="chevron-down" id="collapse-icon" class="w-5 h-5 text-slate-400 transition-transform duration-300 rotate-0"></i>
+                        </div>
+                    </div>
+                    <!-- 摺疊內容 -->
+                    <div id="schedule-collapse-body" class="collapse-transition">
+                        <div class="px-5 pb-5 pt-1 border-t border-slate-100">
+                            <!-- 操作按鈕 (清空) -->
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <button onclick="clearSelectedEcaDates()" class="px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-100 rounded-lg transition-colors flex items-center gap-1">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 清空當前組別
+                                </button>
+                                <button onclick="clearAllData()" class="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors flex items-center gap-1">
+                                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> 重設雲端所有資料
+                                </button>
+                            </div>
+                            <!-- 表格 -->
+                            <div class="overflow-x-auto scrollbar-thin">
+                                <table class="w-full text-sm text-left border-collapse min-w-[600px]">
+                                    <thead>
+                                        <tr class="bg-slate-50 text-slate-500 text-xs font-semibold border-b border-slate-100 uppercase">
+                                            <th class="py-3 px-4">活動項目</th>
+                                            <th class="py-3 px-4">安排日期</th>
+                                            <th class="py-3 px-4">活動時間安排</th>
+                                            <th class="py-3 px-4">場地 / 備註</th>
+                                            <th class="py-3 px-4">規劃人</th>
+                                            <th class="py-3 px-4 text-center">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="scheduled-table-body">
+                                        <tr><td colspan="6" class="py-8 text-center text-slate-400 text-xs"><div class="flex flex-col items-center justify-center gap-2"><i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i><span>載入雲端資料中，或尚未選擇任何日期。</span></div></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== 資料匯入與匯出 (獨立區塊，始終顯示) ===== -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="file-json" class="w-5 h-5 text-indigo-600"></i>
+                            <div>
+                                <p class="font-bold text-sm text-slate-800">資料匯入與匯出</p>
+                                <p class="text-xs text-slate-400">支援匯入舊版 CSV，及多格式進階匯出。</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 w-full md:w-auto justify-end">
+                            <input type="file" id="csv-upload" accept=".csv" class="hidden" onchange="handleCSVImport(event)">
+                            <button onclick="document.getElementById('csv-upload').click()" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-sm rounded-lg transition-all shadow-sm flex items-center justify-center gap-1.5">
+                                <i data-lucide="upload" class="w-4 h-4"></i> 匯入 CSV
+                            </button>
+                            <button onclick="openExportModal()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm rounded-lg transition-all shadow-md flex items-center justify-center gap-1.5">
+                                <i data-lucide="download" class="w-4 h-4"></i> 自訂與匯出
+                            </button>
+                            <button onclick="exportToCSV()" class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm rounded-lg transition-all shadow-md flex items-center justify-center gap-1.5">
+                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> 匯出 CSV
+                            </button>
+                            <button onclick="exportToWord()" class="px-4 py-2 bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white font-bold text-sm rounded-lg transition-all shadow-md flex items-center justify-center gap-1.5">
+                                <i data-lucide="file-text" class="w-4 h-4"></i> 匯出 Word
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
 
         </div>
 
-      </section>
+    </main>
 
-    </div>
-
-  </main>
-<!-- Export Modal -->
-<div id="export-modal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-      <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i data-lucide="settings-2" class="w-5 h-5 text-blue-600"></i> 匯出選項與格式設定</h3>
-      <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-    </div>
-    <div class="p-6 flex-1 overflow-y-auto scrollbar-thin">
-      <p class="text-sm text-slate-600 mb-4 font-medium">請勾選您欲匯出的活動項目。所有匯出檔案將以「活動名稱」優先、「日期」次要進行雙重排序。</p>
-      <div class="flex gap-3 mb-4">
-        <button onclick="toggleAllExportCheckboxes(true)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-md font-semibold transition-colors">全選</button>
-        <button onclick="toggleAllExportCheckboxes(false)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-md font-semibold transition-colors">取消全選</button>
-      </div>
-      <div id="export-checkbox-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6"></div>
-    </div>
-    <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-wrap gap-3 justify-end">
-      <button onclick="exportSelectedData('sheets')" class="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 font-bold text-sm rounded-lg transition-all flex items-center gap-1.5"><i data-lucide="copy" class="w-4 h-4"></i> 複製為 Google Sheet</button>
-      <button onclick="exportSelectedData('csv')" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-sm rounded-lg transition-all flex items-center gap-1.5"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i> 匯出 CSV</button>
-      <button onclick="exportSelectedData('word')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-lg transition-all flex items-center gap-1.5"><i data-lucide="file-text" class="w-4 h-4"></i> 匯出 Word 檔</button>
-    </div>
-  </div>
-</div>
-  <footer class="bg-slate-100 border-t border-slate-200 mt-12 py-6 text-center text-xs text-slate-400">
-    <div class="max-w-7xl mx-auto px-4">
-      <p>© 2026 港澳信義會慕德中學。系統已轉移至 Firebase Firestore 雲端即時串接資料庫系統。</p>
-      <p class="mt-1">如有任何使用疑問，請聯絡 LHW2 或 LS。</p>
-    </div>
-  </footer>
-
-  <!-- Firebase SDKs -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-    // ==========================================
-    // 安全輔助函數：轉義 HTML 防止 XSS
-    // ==========================================
-    function escapeHtml(unsafe) {
-      if (!unsafe) return '';
-      return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
-    // ==========================================
-    // 1. 活動清單 (ECA_ITEMS)
-    // ==========================================
-    const ECA_ITEMS = [
-      "學生團契(星期三)", "基督少年軍(星期三)", "敬拜隊(星期三)",
-      "AI 影片創作課程(星期四)", "花式編程無人機隊(星期五)",
-      "中文辯論隊(星期四)", "英語辯論隊(星期二)", "慕德棋藝隊(星期五)",
-      "粵普朗誦隊(星期四)", "藝文社(星期一)", "法語班(星期四)",
-      "德語班(星期四)", "日語班(星期五)", "韓語班(星期五)",
-      "越野跑隊(星期六)", "籃球隊(星期二、五)", "足球隊(星期一、五)",
-      "男子排球隊(星期一、五)", "女子排球隊(星期二、四)",
-      "乒乓球隊(星期二)", "羽毛球隊(星期一、四)", "獨木舟隊 (星期二)",
-      "運動攀登隊(星期一)", "爵士舞班(星期一)", "陶藝班(星期一)",
-      "校園電視台 (星期一)", "電繪班(星期二)", "英語話劇團(星期四)",
-      "攝影隊(星期二)", "合唱團(星期五)", "慕德流行音樂團(星期四)",
-      "小提琴或中提琴班(星期一)", "木管樂班(星期一)",
-      "電結他或低音結他班(星期一)", "公益少年團(星期五)",
-      "僕人領袖義工團(不定期)"
-    ];
-    window.ECA_ITEMS = ECA_ITEMS;
-
-    // ==========================================
-    // 2. 學年月份 (2026.09 ~ 2027.07)
-    // ==========================================
-    const ACADEMIC_MONTHS = [
-      { year: 2026, month: 9, name: "9月" },
-      { year: 2026, month: 10, name: "10月" },
-      { year: 2026, month: 11, name: "11月" },
-      { year: 2026, month: 12, name: "12月" },
-      { year: 2027, month: 1, name: "1月" },
-      { year: 2027, month: 2, name: "2月" },
-      { year: 2027, month: 3, name: "3月" },
-      { year: 2027, month: 4, name: "4月" },
-      { year: 2027, month: 5, name: "5月" },
-      { year: 2027, month: 6, name: "6月" },
-      { year: 2027, month: 7, name: "7月" }
-    ];
-    window.ACADEMIC_MONTHS = ACADEMIC_MONTHS;
-
-    // ==========================================
-    // 3. 全域狀態
-    // ==========================================
-    let currentMonthIdx = 0; 
-    let selectedEca = null;
-    let scheduledDates = {}; 
-    let teacherName = "";
-    let unsubscribeSnapshot = null; // 用於取消監聽
-
-    // ==========================================
-    // 4. Firebase 初始化
-    // ==========================================
-    // 若環境變數 __firebase_config 存在則使用，否則使用預設 (僅供示範，應替換為您的配置)
-    const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config) 
-      ? JSON.parse(__firebase_config) 
-      : {
-          apiKey: "AIzaSyCINlhqB9dLaXEtpVnEe02Ax3bnc4S8BkY",
-          authDomain: "eca2627-17027.firebaseapp.com",
-          projectId: "eca2627-17027",
-          storageBucket: "eca2627-17027.firebasestorage.app",
-          messagingSenderId: "143804616786",
-          appId: "1:143804616786:web:2561d2361fe181f0ed4f8b",
-          measurementId: "G-P5YKVKP0DQ"
-        };
-    const appId = 'mude-eca-planner-2026';
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    let currentUser = null;
-
-    // ==========================================
-    // 5. 連線與即時同步
-    // ==========================================
-    const initFirebaseAndSync = async () => {
-      const statusDot = document.getElementById('connection-status-dot');
-      const statusText = document.getElementById('connection-status-text');
-
-      try {
-        // 若存在自訂 token 則使用，否則匿名登入
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-
-        onAuthStateChanged(auth, (user) => {
-          if (user) {
-            currentUser = user;
-            statusDot.className = "w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
-            statusText.textContent = "已成功安全連線至 Firebase";
-            statusText.className = "text-xs font-bold text-emerald-600";
-            setupRealtimeSync();
-          } else {
-            statusDot.className = "w-3 h-3 rounded-full bg-rose-500 animate-pulse";
-            statusText.textContent = "未登入連線";
-            statusText.className = "text-xs font-bold text-rose-600";
-          }
-        });
-      } catch (error) {
-        statusDot.className = "w-3 h-3 rounded-full bg-rose-500 animate-none";
-        statusText.textContent = "連線失敗 (請檢查配置)";
-        statusText.className = "text-xs font-bold text-rose-600";
-        console.error("Firebase 初始化錯誤:", error);
-      }
-    };
-
-    const setupRealtimeSync = () => {
-      // 取消舊監聽器
-      if (unsubscribeSnapshot) {
-        unsubscribeSnapshot();
-        unsubscribeSnapshot = null;
-      }
-      const plansCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'eca_plans');
-      unsubscribeSnapshot = onSnapshot(plansCollectionRef, (querySnapshot) => {
-        const cloudData = {};
-        querySnapshot.forEach((doc) => {
-          const docData = doc.data();
-          if (docData.dates) cloudData[doc.id] = docData.dates;
-        });
-        scheduledDates = cloudData;
-        updateCalendarView();
-        renderEcaList();
-        renderSelectedDatesTable();
-        updateStats();
-        // 若已選活動且無資料，更新標籤
-        if (selectedEca && !scheduledDates[selectedEca]) {
-          // 保持選擇，只是日曆無綠色
-        }
-      }, (error) => {
-        showToast("雲端同步失敗：" + error.message, "error");
-      });
-    };
-
-    // ==========================================
-    // 6. 日期狀態判斷 (修訂版：無重複、規則清晰)
-    // ==========================================
-    function getDateStatus(year, month, day) {
-      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const d = new Date(year, month - 1, day);
-      const t = d.getTime();
-
-      // 輔助：檢查是否在日期範圍內 (包含起訖)
-      const inRange = (startStr, endStr) => {
-        const s = new Date(startStr).getTime();
-        const e = new Date(endStr).getTime();
-        return t >= s && t <= e;
-      };
-
-      // ---------- 灰色 (不可選) ----------
-      const greyRules = [
-        { date: '2026-09-01', reason: '開學日' },
-        { date: '2026-10-01', reason: '國慶日' },
-        { date: '2026-09-25', reason: '教師發展日' },
-        { date: '2026-09-26', reason: '中秋節翌日' },
-        { date: '2026-11-23', reason: '上學期暫停課外活動 (準備考試)' },
-        { date: '2027-01-19', reason: '陸運會' },
-        { date: '2027-02-03', reason: '農曆年假期' },
-        { date: '2027-03-17', reason: '初中考試' },
-        { date: '2027-03-25', reason: '初中考試' },
-        { date: '2026-10-19', reason: '重陽節翌日' },
-        { date: '2026-10-30', reason: '福音茶座' },
-        { date: '2026-11-03', reason: '全校旅行日' },
-        { date: '2026-11-04', reason: '教師發展日' },
-        { date: '2026-11-20', reason: '資訊日綵排' },
-        { date: '2027-01-01', reason: '元旦假期' },
-        { date: '2027-02-02', reason: '元宵義賣' },
-        { date: '2027-02-26', reason: '全校休整日' },
-        { date: '2027-03-16', reason: '教師發展日' },
-        { date: '2027-04-23', reason: '全方位學習日' },
-        { date: '2027-05-13', reason: '佛誕' }
-      ];
-      const greyRanges = [
-        { start: '2026-09-01', end: '2026-09-11', reason: '9月1日至11日 (開學停活動)' },
-        { start: '2026-11-23', end: '2026-12-31', reason: '上學期暫停課外活動 (準備考試)' },
-        { start: '2027-01-19', end: '2027-01-21', reason: '陸運會及補假' },
-        { start: '2027-02-03', end: '2027-02-14', reason: '農曆年假期' },
-        { start: '2027-03-17', end: '2027-03-24', reason: '初中考試' },
-        { start: '2027-03-25', end: '2027-04-05', reason: '復活節假期' },
-        { start: '2027-05-17', end: '2027-05-31', reason: '下學期暫停課外活動 (準備考試)' }
-      ];
-
-      for (let rule of greyRules) {
-        if (rule.date === dateStr) return { allowed: false, color: 'grey', reason: rule.reason };
-      }
-      for (let range of greyRanges) {
-        if (inRange(range.start, range.end)) return { allowed: false, color: 'grey', reason: range.reason };
-      }
-
-      // ---------- 粉紅色 (禮堂暫停，但可選) ----------
-      const pinkDates = [
-        '2026-09-18', '2026-10-06', '2026-10-16',
-        '2027-01-22', '2027-01-23', '2027-01-24', '2027-01-25', '2027-01-26', '2027-01-27', '2027-01-28', '2027-01-29', // 範圍 22-29
-        '2027-03-05', '2027-04-08', '2027-04-09', '2027-04-12', '2027-04-13', '2027-04-21', '2027-05-07'
-      ];
-      // 為簡化，將範圍也手動列出（亦可使用範圍檢查，但此處數量有限）
-      if (inRange('2027-01-22', '2027-01-29')) {
-        return { allowed: true, color: 'pink', reason: '放學禮堂不能用 (中六Mock及書展)' };
-      }
-      if (pinkDates.includes(dateStr)) {
-        let reason = '放學禮堂不能用';
-        if (dateStr === '2026-09-18') reason = '放學禮堂不能用 (家教會周會大會)';
-        else if (dateStr === '2026-10-06') reason = '放學禮堂不能用 (教職員大會)';
-        else if (dateStr === '2026-10-16') reason = '放學禮堂不能用 (初中家長晚會)';
-        else if (dateStr === '2027-03-05') reason = '放學禮堂不能用 (準備中一面試)';
-        else if (dateStr === '2027-04-08' || dateStr === '2027-04-09' || dateStr === '2027-04-12' || dateStr === '2027-04-13') reason = '放學禮堂不能用 (DSE借場)';
-        else if (dateStr === '2027-04-21') reason = '放學禮堂不能用 (教職員會議)';
-        else if (dateStr === '2027-05-07') reason = '放學禮堂不能用 (家長講座)';
-        return { allowed: true, color: 'pink', reason };
-      }
-
-      // ---------- 黃色 (特別時間表 14:30) ----------
-      const yellowDates = ['2026-10-23', '2026-11-06', '2027-02-18'];
-      if (yellowDates.includes(dateStr)) {
-        return { allowed: true, color: 'yellow', reason: '特別時間表 (下午2時30分開始)' };
-      }
-
-      // ---------- 普通可選日期 ----------
-      return { allowed: true, color: 'normal', reason: d.getDay() === 0 ? '週日常規放假' : '可安排課外活動' };
-    }
-
-    // ==========================================
-    // 7. UI 渲染函數
-    // ==========================================
-    function renderEcaList() {
-      const container = document.getElementById('eca-list-container');
-      container.innerHTML = '';
-      ECA_ITEMS.forEach(eca => {
-        const isSelected = selectedEca === eca;
-        const count = scheduledDates[eca] ? Object.keys(scheduledDates[eca]).length : 0;
-        
-        const div = document.createElement('div');
-        div.className = `eca-item flex items-center justify-between p-2.5 my-1 rounded-lg cursor-pointer transition-all ${
-          isSelected 
-          ? 'bg-blue-600 text-white shadow-md font-semibold' 
-          : 'bg-white hover:bg-blue-50 border border-slate-100 text-slate-700'
-        }`;
-        div.onclick = () => selectEca(eca);
-        div.innerHTML = `
-          <div class="flex items-center gap-2">
-            <span class="w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-blue-500'}"></span>
-            <span class="text-xs truncate max-w-[200px]">${escapeHtml(eca)}</span>
-          </div>
-          ${count > 0 ? `<span class="px-2 py-0.5 text-[10px] rounded-full font-bold ${isSelected ? 'bg-blue-500 text-white' : 'bg-emerald-100 text-emerald-800'}">${count}堂</span>` : ''}
-        `;
-        container.appendChild(div);
-      });
-      document.getElementById('eca-count-badge').textContent = `${ECA_ITEMS.length} 個`;
-    }
-
-    window.filterEcas = function() {
-      const q = document.getElementById('search-eca').value.trim().toLowerCase();
-      const items = document.querySelectorAll('.eca-item');
-      items.forEach(item => {
-        const text = item.innerText.toLowerCase();
-        item.classList.toggle('hidden', !text.includes(q));
-      });
-    }
-
-    function renderMonthTabs() {
-      const container = document.getElementById('month-tabs-container');
-      container.innerHTML = '';
-      ACADEMIC_MONTHS.forEach((m, idx) => {
-        const btn = document.createElement('button');
-        const isSelected = currentMonthIdx === idx;
-        btn.className = `px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${
-          isSelected ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
-        }`;
-        btn.onclick = () => {
-          currentMonthIdx = idx;
-          updateCalendarView();
-          renderMonthTabs();
-        };
-        btn.textContent = `${m.year}年 ${m.name}`;
-        container.appendChild(btn);
-      });
-    }
-
-    function selectEca(eca) {
-      selectedEca = eca;
-      document.getElementById('active-eca-label').textContent = `正在安排: ${eca}`;
-      document.getElementById('active-eca-label').className = "bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-0.5 rounded-full";
-      renderEcaList();
-      updateCalendarView();
-      renderSelectedDatesTable();
-    }
-
-    window.prevMonth = function() {
-      if (currentMonthIdx > 0) {
-        currentMonthIdx--; updateCalendarView(); renderMonthTabs();
-      }
-    }
-    window.nextMonth = function() {
-      if (currentMonthIdx < ACADEMIC_MONTHS.length - 1) {
-        currentMonthIdx++; updateCalendarView(); renderMonthTabs();
-      }
-    }
-
-    function updateCalendarView() {
-      const target = ACADEMIC_MONTHS[currentMonthIdx];
-      const titleEl = document.getElementById('current-month-title');
-      if (titleEl) titleEl.textContent = `${target.year}年 ${target.name}`;
-
-      const grid = document.getElementById('calendar-days-grid');
-      if (!grid) return;
-      grid.innerHTML = '';
-
-      const firstDayVal = new Date(target.year, target.month - 1, 1).getDay();
-      const totalDays = new Date(target.year, target.month, 0).getDate();
-
-      for (let i = 0; i < firstDayVal; i++) {
-        const pad = document.createElement('div');
-        pad.className = 'bg-slate-50/50 rounded-xl border border-dashed border-slate-100 min-h-[48px]';
-        grid.appendChild(pad);
-      }
-
-      for (let day = 1; day <= totalDays; day++) {
-        const dateStr = `${target.year}-${String(target.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const status = getDateStatus(target.year, target.month, day);
-        const isScheduled = selectedEca && scheduledDates[selectedEca] && scheduledDates[selectedEca][dateStr];
-
-        const cell = document.createElement('div');
-        cell.className = `group relative rounded-xl p-2 min-h-[58px] border transition-all flex flex-col justify-between ${
-          !status.allowed 
-          ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed select-none' 
-          : status.color === 'yellow'
-            ? isScheduled ? 'bg-emerald-500 text-white border-emerald-600 shadow-md cursor-pointer' : 'bg-amber-50 hover:bg-amber-100/80 border-amber-300 text-amber-900 cursor-pointer'
-            : status.color === 'pink'
-              ? isScheduled ? 'bg-emerald-500 text-white border-emerald-600 shadow-md cursor-pointer' : 'bg-pink-50 hover:bg-pink-100/80 border-pink-300 text-pink-900 cursor-pointer'
-              : isScheduled
-                ? 'bg-emerald-500 text-white border-emerald-600 shadow-md cursor-pointer' : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 cursor-pointer'
-        }`;
-
-        if (status.allowed) cell.onclick = () => toggleDateSelection(dateStr, status);
-
-        const smallText = isScheduled ? '已排活動' 
-                        : status.color === 'yellow' ? '特別14:30' 
-                        : status.color === 'pink' ? '禮堂暫停' : '';
-        const smallColor = isScheduled ? 'text-emerald-100' 
-                         : !status.allowed ? 'text-slate-400' 
-                         : status.color === 'yellow' ? 'text-amber-600' 
-                         : status.color === 'pink' ? 'text-pink-600' : 'text-slate-400';
-
-        cell.innerHTML = `
-          <div class="flex justify-between items-center">
-            <span class="font-extrabold text-sm">${day}</span>
-            ${isScheduled ? '<span class="w-1.5 h-1.5 rounded-full bg-white"></span>' : ''}
-          </div>
-          <span class="text-[9px] mt-1 font-medium leading-tight truncate ${smallColor}">${smallText}</span>
-          <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-slate-950 text-white text-[10px] rounded py-1 px-2.5 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-10 shadow-lg">
-            ${escapeHtml(status.reason)}
-          </div>
-        `;
-        grid.appendChild(cell);
-      }
-    }
-
-    // ==========================================
-    // 8. Firestore 資料操作
-    // ==========================================
-    async function toggleDateSelection(dateStr, status) {
-      if (!selectedEca) { showToast("請先在左方選擇要規劃的活動項目！", "warning"); return; }
-      const inputName = document.getElementById('teacher-name').value.trim();
-      if (!inputName) { showToast("請先填寫左上角「負責同工姓名」！", "warning"); document.getElementById('teacher-name').focus(); return; }
-      if (!currentUser) { showToast("尚未安全登入 Firebase。", "error"); return; }
-
-      const currentEcaPlans = scheduledDates[selectedEca] ? { ...scheduledDates[selectedEca] } : {};
-
-      if (currentEcaPlans[dateStr]) {
-        delete currentEcaPlans[dateStr];
-      } else {
-        let timeNote = '常規課外活動時間';
-        if (status.color === 'yellow') timeNote = '特別時間表 (下午2時30分開始)';
-        if (status.color === 'pink') timeNote = status.reason;
-
-        currentEcaPlans[dateStr] = {
-          timeNotes: timeNote,
-          customNotes: '',
-          teacher: inputName
-        };
-      }
-
-      try {
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'eca_plans', selectedEca);
-        if (Object.keys(currentEcaPlans).length === 0) {
-          await deleteDoc(docRef);
-          showToast(`已清空 ${selectedEca} 的排程`, "info");
-        } else {
-          await setDoc(docRef, { ecaName: selectedEca, dates: currentEcaPlans, lastUpdatedBy: inputName, updatedAt: new Date().toISOString() });
-          showToast(`已成功即時同步至 Firebase`, "success");
-        }
-      } catch (err) {
-        showToast("同步失敗：" + err.message, "error");
-      }
-    }
-
-    // ==========================================
-    // 9. 表格渲染 (使用 DOM 方法，避免 XSS)
-    // ==========================================
-    function renderSelectedDatesTable() {
-      const tbody = document.getElementById('scheduled-table-body');
-      if (!tbody) return;
-      tbody.innerHTML = '';
-      const allRows = [];
-
-      Object.keys(scheduledDates).forEach(eca => {
-        Object.keys(scheduledDates[eca]).forEach(dateStr => {
-          allRows.push({
-            ecaName: eca,
-            date: dateStr,
-            timeNotes: scheduledDates[eca][dateStr].timeNotes,
-            customNotes: scheduledDates[eca][dateStr].customNotes || "",
-            teacher: scheduledDates[eca][dateStr].teacher || "未填寫"
-          });
-        });
-      });
-
-      allRows.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      if (allRows.length > 0) {
-        allRows.forEach(row => {
-          const tr = document.createElement('tr');
-          const isPinkNote = row.timeNotes.includes('禮堂');
-          tr.className = `border-b border-slate-100 hover:bg-slate-50 transition-colors ${selectedEca === row.ecaName ? 'bg-blue-50/40' : ''}`;
-          
-          // 活動名稱
-          const td1 = document.createElement('td');
-          td1.className = 'py-3.5 px-4';
-          const span1 = document.createElement('span');
-          span1.className = 'font-bold text-slate-800 text-xs';
-          span1.textContent = row.ecaName;
-          td1.appendChild(span1);
-          tr.appendChild(td1);
-
-          // 日期
-          const td2 = document.createElement('td');
-          td2.className = 'py-3.5 px-4 text-xs font-mono font-medium text-slate-600';
-          td2.textContent = row.date;
-          tr.appendChild(td2);
-
-          // 時間安排
-          const td3 = document.createElement('td');
-          td3.className = 'py-3.5 px-4';
-          const span3 = document.createElement('span');
-          span3.className = `text-xs px-2.5 py-1 rounded-full font-semibold ${
-            row.timeNotes.includes('特別') ? 'bg-amber-100 text-amber-800 border border-amber-200' 
-            : isPinkNote ? 'bg-pink-100 text-pink-800 border border-pink-200'
-            : 'bg-slate-100 text-slate-700 border border-slate-200'
-          }`;
-          span3.textContent = row.timeNotes;
-          td3.appendChild(span3);
-          tr.appendChild(td3);
-
-          // 自定義備註 (輸入框)
-          const td4 = document.createElement('td');
-          td4.className = 'py-3.5 px-4';
-          const input = document.createElement('input');
-          input.type = 'text';
-          input.value = row.customNotes;
-          input.placeholder = '輸入活動課室...';
-          input.className = 'w-full text-xs px-2 py-1 bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500';
-          input.onchange = (e) => updateRowCustomNotes(row.ecaName, row.date, e.target.value);
-          td4.appendChild(input);
-          tr.appendChild(td4);
-
-          // 負責同工
-          const td5 = document.createElement('td');
-          td5.className = 'py-3.5 px-4 text-xs font-medium text-slate-500';
-          td5.textContent = row.teacher;
-          tr.appendChild(td5);
-
-          // 操作按鈕
-          const td6 = document.createElement('td');
-          td6.className = 'py-3.5 px-4 text-center';
-          const btn = document.createElement('button');
-          btn.className = 'p-1 hover:bg-rose-50 text-rose-500 rounded transition-colors';
-          btn.onclick = () => removeIndividualDate(row.ecaName, row.date);
-          const icon = document.createElement('i');
-          icon.setAttribute('data-lucide', 'trash-2');
-          icon.className = 'w-4 h-4 mx-auto';
-          btn.appendChild(icon);
-          td6.appendChild(btn);
-          tr.appendChild(td6);
-
-          tbody.appendChild(tr);
-        });
-        lucide.createIcons();
-      } else {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="6" class="py-10 text-center text-slate-400 text-xs"><div class="flex flex-col items-center justify-center gap-2"><i data-lucide="inbox" class="w-10 h-10 text-slate-300"></i><p>雲端資料庫目前無記錄</p></div></td>`;
-        tbody.appendChild(tr);
-        lucide.createIcons();
-      }
-    }
-
-    // ==========================================
-    // 10. 行內備註更新
-    // ==========================================
-    window.updateRowCustomNotes = async function(ecaName, dateStr, val) {
-      if (!currentUser) return;
-      const inputName = document.getElementById('teacher-name').value.trim() || "未填寫";
-      if (scheduledDates[ecaName] && scheduledDates[ecaName][dateStr]) {
-        const currentEcaPlans = { ...scheduledDates[ecaName] };
-        currentEcaPlans[dateStr].customNotes = val;
-        try {
-          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'eca_plans', ecaName);
-          await setDoc(docRef, { ecaName, dates: currentEcaPlans, lastUpdatedBy: inputName, updatedAt: new Date().toISOString() });
-          showToast("備註已自動同步！", "success");
-        } catch (err) { showToast("同步失敗：" + err.message, "error"); }
-      }
-    }
-
-    // ==========================================
-    // 11. 刪除單筆日期
-    // ==========================================
-    window.removeIndividualDate = async function(ecaName, dateStr) {
-      if (!currentUser) return;
-      if (scheduledDates[ecaName] && scheduledDates[ecaName][dateStr]) {
-        const currentEcaPlans = { ...scheduledDates[ecaName] };
-        delete currentEcaPlans[dateStr];
-        const inputName = document.getElementById('teacher-name').value.trim() || "未填寫";
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'eca_plans', ecaName);
-        try {
-          if (Object.keys(currentEcaPlans).length === 0) await deleteDoc(docRef);
-          else await setDoc(docRef, { ecaName, dates: currentEcaPlans, lastUpdatedBy: inputName, updatedAt: new Date().toISOString() });
-          showToast("已從雲端刪除該堂", "info");
-        } catch (err) { showToast("刪除失敗", "error"); }
-      }
-    }
-
-    // ==========================================
-    // 12. 清空當前組別 & 全部重設
-    // ==========================================
-    window.clearSelectedEcaDates = async function() {
-      if (!selectedEca || !currentUser) return;
-      if (scheduledDates[selectedEca]) {
-        try {
-          await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'eca_plans', selectedEca));
-          showToast(`已清空雲端 ${selectedEca} 所有日期`, "info");
-        } catch (err) { showToast("清空失敗", "error"); }
-      }
-    }
-
-    window.clearAllData = async function() {
-      if (!currentUser) return;
-      const inputName = document.getElementById('teacher-name').value.trim();
-      if (!inputName) { showToast("請先填寫同工姓名！", "warning"); return; }
-      try {
-        const batch = writeBatch(db);
-        // 僅刪除存在於 scheduledDates 中的文件
-        for (const eca of Object.keys(scheduledDates)) {
-          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'eca_plans', eca);
-          batch.delete(docRef);
-        }
-        await batch.commit();
-        showToast("雲端數據已徹底清空！", "success");
-      } catch (err) { showToast("重設失敗", "error"); }
-    }
-
-    // ==========================================
-    // 13. 統計更新
-    // ==========================================
-    function updateStats() {
-      let totalDates = 0, activeEcasCount = 0, specialDatesCount = 0;
-      Object.keys(scheduledDates).forEach(eca => {
-        activeEcasCount++;
-        Object.keys(scheduledDates[eca]).forEach(dateStr => {
-          totalDates++;
-          if (scheduledDates[eca][dateStr].timeNotes.includes('特別')) specialDatesCount++;
-        });
-      });
-      document.getElementById('stat-total-dates').textContent = `${totalDates} 堂`;
-      document.getElementById('stat-active-ecas').textContent = `${activeEcasCount} 組`;
-      document.getElementById('stat-special-dates').textContent = `${specialDatesCount} 堂`;
-    }
-
-    // ==========================================
-    // 14. 單日查詢 (Daily View)
-    // ==========================================
-    window.renderDailyView = function() {
-      const qDate = document.getElementById('daily-query-date').value;
-      const container = document.getElementById('daily-view-results');
-      if(!qDate) { container.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs">請選擇日期進行查詢。</div>`; return; }
-
-      const dailyActivities = [];
-      Object.keys(scheduledDates).forEach(eca => {
-        if(scheduledDates[eca][qDate]) {
-          dailyActivities.push({ ecaName: eca, ...scheduledDates[eca][qDate] });
-        }
-      });
-
-      if (dailyActivities.length === 0) {
-        container.innerHTML = `<div class="text-center py-6 text-slate-500 text-sm font-medium">該日 (${escapeHtml(qDate)}) 暫無任何活動安排。</div>`;
-        return;
-      }
-
-      let html = `<h4 class="font-bold text-sm text-slate-800 mb-2 border-b border-slate-200 pb-2">${escapeHtml(qDate)} 共有 ${dailyActivities.length} 項活動</h4>`;
-      dailyActivities.forEach(act => {
-        html += `
-          <div class="bg-white p-3 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm mb-2">
-            <div>
-              <p class="font-bold text-blue-700 text-sm">${escapeHtml(act.ecaName)}</p>
-              <p class="text-xs text-slate-500 mt-1">${escapeHtml(act.timeNotes)}</p>
+    <!-- ==================== EXPORT MODAL ==================== -->
+    <div id="export-modal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i data-lucide="settings-2" class="w-5 h-5 text-blue-600"></i> 匯出選項與格式設定</h3>
+                <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div class="text-left sm:text-right">
-              <p class="text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-1 rounded inline-block mb-1"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1"></i>${escapeHtml(act.customNotes || '未填寫場地')}</p>
-              <p class="text-[10px] text-slate-400">負責人: ${escapeHtml(act.teacher)}</p>
+            <div class="p-6 flex-1 overflow-y-auto scrollbar-thin">
+                <p class="text-sm text-slate-600 mb-4 font-medium">請勾選您欲匯出的活動項目。所有匯出檔案將以「活動名稱」優先、「日期」次要進行雙重排序。</p>
+                <div class="flex gap-3 mb-4">
+                    <button onclick="toggleAllExportCheckboxes(true)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-md font-semibold transition-colors">全選</button>
+                    <button onclick="toggleAllExportCheckboxes(false)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-md font-semibold transition-colors">取消全選</button>
+                </div>
+                <div id="export-checkbox-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6"></div>
             </div>
-          </div>
-        `;
-      });
-      container.innerHTML = html;
-      lucide.createIcons();
-    }
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-wrap gap-3 justify-end">
+                <button onclick="exportSelectedData('sheets')" class="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 font-bold text-sm rounded-lg transition-all flex items-center gap-1.5"><i data-lucide="copy" class="w-4 h-4"></i> 複製為 Google Sheet</button>
+                <button onclick="exportSelectedData('csv')" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-sm rounded-lg transition-all flex items-center gap-1.5"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i> 匯出 CSV</button>
+                <button onclick="exportSelectedData('word')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-lg transition-all flex items-center gap-1.5"><i data-lucide="file-text" class="w-4 h-4"></i> 匯出 Word 檔</button>
+            </div>
+        </div>
+    </div>
 
-    // ==========================================
-    // 15. CSV 匯入 (改良解析)
-    // ==========================================
-    window.handleCSVImport = function(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        const text = e.target.result;
-        // 使用正規表達式解析 CSV (處理引號)
-        const rows = [];
-        const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
-        for (let line of lines) {
-          // 簡單解析：以逗號分隔，但忽略引號內的逗號
-          const fields = [];
-          let current = '';
-          let inQuotes = false;
-          for (let i=0; i<line.length; i++) {
-            const char = line[i];
-            if (char === '"') {
-              inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-              fields.push(current.trim());
-              current = '';
-            } else {
-              current += char;
+    <!-- ==================== ADMIN PANEL MODAL ==================== -->
+    <div id="admin-panel" class="hidden fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i data-lucide="shield" class="w-5 h-5 text-amber-600"></i> 管理員控制台</h3>
+                <button onclick="closeAdminPanel()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <!-- 密碼驗證區 -->
+            <div id="admin-auth-area" class="p-6 bg-amber-50 border-b border-amber-200 flex flex-col sm:flex-row items-center gap-4">
+                <div class="flex items-center gap-2 text-sm font-medium text-amber-700"><i data-lucide="lock" class="w-4 h-4"></i> 請輸入管理員密碼：</div>
+                <input type="password" id="admin-password-input" placeholder="預設密碼: admin123" class="px-3 py-1.5 border border-amber-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 w-full sm:w-56">
+                <button onclick="verifyAdminPassword()" class="px-5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold rounded-lg transition-colors">驗證</button>
+                <span id="admin-auth-msg" class="text-xs text-rose-600 font-medium"></span>
+            </div>
+            <!-- 管理功能 (預設隱藏) -->
+            <div id="admin-content-area" class="hidden flex-1 overflow-hidden flex flex-col">
+                <div class="flex border-b border-slate-200 bg-slate-50 px-4">
+                    <div class="admin-panel-tab active" data-tab="activities" onclick="switchAdminTab('activities')">📋 活動管理</div>
+                    <div class="admin-panel-tab" data-tab="venues" onclick="switchAdminTab('venues')">📍 場地管理</div>
+                </div>
+                <div class="flex-1 overflow-y-auto scrollbar-thin p-6">
+                    <!-- 活動管理 -->
+                    <div id="admin-tab-activities" class="admin-tab-content">
+                        <div class="flex items-center justify-between mb-4">
+                            <p class="text-sm text-slate-500">管理所有課外活動項目名稱。</p>
+                            <button onclick="showAddActivityForm()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> 新增活動</button>
+                        </div>
+                        <div id="activity-list-admin" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <!-- 動態產生 -->
+                        </div>
+                        <!-- 新增/編輯表單 (內嵌) -->
+                        <div id="activity-form-container" class="hidden mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <input type="hidden" id="edit-activity-id">
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <input type="text" id="activity-form-input" placeholder="請輸入活動名稱..." class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <div class="flex gap-2">
+                                    <button onclick="saveActivity()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition-colors">儲存</button>
+                                    <button onclick="cancelActivityForm()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-bold rounded-lg transition-colors">取消</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 場地管理 -->
+                    <div id="admin-tab-venues" class="admin-tab-content hidden">
+                        <div class="flex items-center justify-between mb-4">
+                            <p class="text-sm text-slate-500">管理所有可選場地 / 課室。</p>
+                            <button onclick="showAddVenueForm()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> 新增場地</button>
+                        </div>
+                        <div id="venue-list-admin" class="flex flex-wrap gap-2">
+                            <!-- 動態產生 -->
+                        </div>
+                        <div id="venue-form-container" class="hidden mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <input type="hidden" id="edit-venue-id">
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <input type="text" id="venue-form-input" placeholder="請輸入場地名稱..." class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <div class="flex gap-2">
+                                    <button onclick="saveVenue()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition-colors">儲存</button>
+                                    <button onclick="cancelVenueForm()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-bold rounded-lg transition-colors">取消</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="bg-slate-100 border-t border-slate-200 mt-12 py-6 text-center text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>© 2026 港澳信義會慕德中學。系統已轉移至 Firebase Firestore 雲端即時串接資料庫系統。</p>
+            <p class="mt-1">如有任何使用疑問，請聯絡 LHW2 或 LS。</p>
+        </div>
+    </footer>
+
+    <!-- ==================== FIREBASE + MAIN SCRIPT ==================== -->
+    <script type="module">
+        // ============================================================
+        //  Firebase 初始化
+        // ============================================================
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, writeBatch, addDoc, updateDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config) ?
+            JSON.parse(__firebase_config) : {
+                apiKey: "AIzaSyCINlhqB9dLaXEtpVnEe02Ax3bnc4S8BkY",
+                authDomain: "eca2627-17027.firebaseapp.com",
+                projectId: "eca2627-17027",
+                storageBucket: "eca2627-17027.firebasestorage.app",
+                messagingSenderId: "143804616786",
+                appId: "1:143804616786:web:2561d2361fe181f0ed4f8b",
+                measurementId: "G-P5YKVKP0DQ"
+            };
+        const APP_ID = 'mude-eca-planner-2026';
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // ============================================================
+        //  全域狀態
+        // ============================================================
+        let currentUser = null;
+        let unsubscribeSnapshot = null;
+        let currentMonthIdx = 0;
+        let selectedEca = null;
+        let scheduledDates = {}; // { ecaName: { dateStr: { timeNotes, customNotes, teacher } } }
+        let teacherName = "";
+        let ecaItems = []; // 從 Firebase 載入
+        let venueItems = []; // 從 Firebase 載入
+        let isAdminVerified = false;
+        let isScheduleOpen = false; // 摺疊狀態
+
+        // ============================================================
+        //  安全輔助
+        // ============================================================
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function showToast(msg, type = "success") {
+            const c = document.getElementById('toast-container');
+            if (!c) return;
+            const colors = {
+                error: "bg-rose-50 text-rose-800 border-rose-200",
+                warning: "bg-amber-50 text-amber-800 border-amber-200",
+                info: "bg-blue-50 text-blue-800 border-blue-200",
+                success: "bg-emerald-50 text-emerald-800 border-emerald-200"
+            };
+            const icons = { error: "alert-octagon", warning: "alert-triangle", info: "info", success: "check-circle" };
+            const t = document.createElement('div');
+            t.className = `flex items-center gap-2 px-4 py-3 rounded-xl border shadow-lg max-w-sm transition-all duration-300 transform translate-y-2 opacity-0 ${colors[type] || colors.success}`;
+            t.innerHTML = `<i data-lucide="${icons[type] || 'check-circle'}" class="w-5 h-5 shrink-0"></i><span class="text-xs font-semibold">${escapeHtml(msg)}</span>`;
+            c.appendChild(t);
+            lucide.createIcons();
+            setTimeout(() => t.classList.remove('translate-y-2', 'opacity-0'), 50);
+            setTimeout(() => { t.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => t.remove(), 300); }, 4000);
+        }
+
+        // ============================================================
+        //  1. 載入活動列表 & 場地列表 (從 Firebase)
+        // ============================================================
+        async function loadActivities() {
+            try {
+                const snap = await getDocs(collection(db, 'artifacts', APP_ID, 'public', 'data', 'activities'));
+                const list = [];
+                snap.forEach(d => { list.push({ id: d.id, name: d.data().name }); });
+                if (list.length === 0) {
+                    // 若無資料，寫入預設
+                    const defaults = [
+                        "學生團契(星期三)", "基督少年軍(星期三)", "敬拜隊(星期三)",
+                        "AI 影片創作課程(星期四)", "花式編程無人機隊(星期五)",
+                        "中文辯論隊(星期四)", "英語辯論隊(星期二)", "慕德棋藝隊(星期五)",
+                        "粵普朗誦隊(星期四)", "藝文社(星期一)", "法語班(星期四)",
+                        "德語班(星期四)", "日語班(星期五)", "韓語班(星期五)",
+                        "越野跑隊(星期六)", "籃球隊(星期二、五)", "足球隊(星期一、五)",
+                        "男子排球隊(星期一、五)", "女子排球隊(星期二、四)",
+                        "乒乓球隊(星期二)", "羽毛球隊(星期一、四)", "獨木舟隊 (星期二)",
+                        "運動攀登隊(星期一)", "爵士舞班(星期一)", "陶藝班(星期一)",
+                        "校園電視台 (星期一)", "電繪班(星期二)", "英語話劇團(星期四)",
+                        "攝影隊(星期二)", "合唱團(星期五)", "慕德流行音樂團(星期四)",
+                        "小提琴或中提琴班(星期一)", "木管樂班(星期一)",
+                        "電結他或低音結他班(星期一)", "公益少年團(星期五)",
+                        "僕人領袖義工團(不定期)"
+                    ];
+                    const batch = writeBatch(db);
+                    defaults.forEach(n => {
+                        const ref = doc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'activities'));
+                        batch.set(ref, { name: n });
+                    });
+                    await batch.commit();
+                    const snap2 = await getDocs(collection(db, 'artifacts', APP_ID, 'public', 'data', 'activities'));
+                    snap2.forEach(d => { list.push({ id: d.id, name: d.data().name }); });
+                }
+                ecaItems = list;
+                return list;
+            } catch (e) { console.error("載入活動失敗", e); return []; }
+        }
+
+        async function loadVenues() {
+            try {
+                const snap = await getDocs(collection(db, 'artifacts', APP_ID, 'public', 'data', 'venues'));
+                const list = [];
+                snap.forEach(d => { list.push({ id: d.id, name: d.data().name }); });
+                if (list.length === 0) {
+                    const defaults = ["禮堂", "操場", "音樂室", "美術室", "電腦室", "圖書館", "舞蹈室", "多用途室", "課室 (待定)"];
+                    const batch = writeBatch(db);
+                    defaults.forEach(n => {
+                        const ref = doc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'venues'));
+                        batch.set(ref, { name: n });
+                    });
+                    await batch.commit();
+                    const snap2 = await getDocs(collection(db, 'artifacts', APP_ID, 'public', 'data', 'venues'));
+                    snap2.forEach(d => { list.push({ id: d.id, name: d.data().name }); });
+                }
+                venueItems = list;
+                return list;
+            } catch (e) { console.error("載入場地失敗", e); return []; }
+        }
+
+        // ============================================================
+        //  2. 即時同步 scheduledDates
+        // ============================================================
+        function setupRealtimeSync() {
+            if (unsubscribeSnapshot) { unsubscribeSnapshot();
+                unsubscribeSnapshot = null; }
+            const ref = collection(db, 'artifacts', APP_ID, 'public', 'data', 'eca_plans');
+            unsubscribeSnapshot = onSnapshot(ref, (snap) => {
+                const data = {};
+                snap.forEach(d => {
+                    const d2 = d.data();
+                    if (d2.dates) data[d.id] = d2.dates;
+                });
+                scheduledDates = data;
+                renderAll();
+            }, (err) => showToast("同步失敗: " + err.message, "error"));
+        }
+
+        // ============================================================
+        //  3. Firebase 登入
+        // ============================================================
+        async function initFirebase() {
+            const dot = document.getElementById('connection-status-dot');
+            const txt = document.getElementById('connection-status-text');
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUser = user;
+                        dot.className = "w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
+                        txt.textContent = "已成功安全連線至 Firebase";
+                        txt.className = "text-xs font-bold text-emerald-600";
+                        setupRealtimeSync();
+                    } else {
+                        dot.className = "w-3 h-3 rounded-full bg-rose-500 animate-pulse";
+                        txt.textContent = "未登入連線";
+                        txt.className = "text-xs font-bold text-rose-600";
+                    }
+                });
+            } catch (e) {
+                dot.className = "w-3 h-3 rounded-full bg-rose-500 animate-none";
+                txt.textContent = "連線失敗 (請檢查配置)";
+                txt.className = "text-xs font-bold text-rose-600";
+                console.error(e);
             }
-          }
-          fields.push(current.trim());
-          // 過濾標題行：檢查第一個欄位是否包含 "活動" 或 "(星期"
-          if (fields.length >= 5 && fields[0] && !fields[0].includes('活動')) {
-            rows.push(fields);
-          }
         }
 
-        if (rows.length === 0) { showToast("未能辨識有效資料列，請確保格式為：活動項目,日期,時間,備註,負責人", "error"); return; }
-
-        const importedData = {};
-        rows.forEach(row => {
-          const ecaName = row[0] || '';
-          const date = row[1] || '';
-          if (!ecaName || !date) return;
-          if (!importedData[ecaName]) importedData[ecaName] = {};
-          importedData[ecaName][date] = { 
-            timeNotes: row[2] || '常規課外活動時間', 
-            customNotes: row[3] || '', 
-            teacher: row[4] || 'CSV 匯入'
-          };
-        });
-
-        if (Object.keys(importedData).length === 0) {
-          showToast("無法解析任何有效的活動資料", "error");
-          return;
+        // ============================================================
+        //  4. 日期狀態 (同原本邏輯)
+        // ============================================================
+        function getDateStatus(year, month, day) {
+            const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const d = new Date(year, month - 1, day);
+            const t = d.getTime();
+            const inRange = (s, e) => { const a = new Date(s).getTime(),
+                    b = new Date(e).getTime(); return t >= a && t <= b; };
+            const greyRules = [
+                { date: '2026-09-01' }, { date: '2026-10-01' }, { date: '2026-09-25' }, { date: '2026-09-26' },
+                { date: '2026-11-23' }, { date: '2027-01-19' }, { date: '2027-02-03' }, { date: '2027-03-17' },
+                { date: '2027-03-25' }, { date: '2026-10-19' }, { date: '2026-10-30' }, { date: '2026-11-03' },
+                { date: '2026-11-04' }, { date: '2026-11-20' }, { date: '2027-01-01' }, { date: '2027-02-02' },
+                { date: '2027-02-26' }, { date: '2027-03-16' }, { date: '2027-04-23' }, { date: '2027-05-13' }
+            ];
+            const greyRanges = [
+                { start: '2026-09-01', end: '2026-09-11' }, { start: '2026-11-23', end: '2026-12-31' },
+                { start: '2027-01-19', end: '2027-01-21' }, { start: '2027-02-03', end: '2027-02-14' },
+                { start: '2027-03-17', end: '2027-03-24' }, { start: '2027-03-25', end: '2027-04-05' },
+                { start: '2027-05-17', end: '2027-05-31' }
+            ];
+            for (let r of greyRules)
+                if (r.date === dateStr) return { allowed: false, color: 'grey', reason: '不可安排' };
+            for (let r of greyRanges)
+                if (inRange(r.start, r.end)) return { allowed: false, color: 'grey', reason: '不可安排' };
+            const pinkDates = ['2026-09-18', '2026-10-06', '2026-10-16', '2027-03-05', '2027-04-08', '2027-04-09', '2027-04-12', '2027-04-13', '2027-04-21', '2027-05-07'];
+            if (inRange('2027-01-22', '2027-01-29')) return { allowed: true, color: 'pink', reason: '放學禮堂不能用' };
+            if (pinkDates.includes(dateStr)) return { allowed: true, color: 'pink', reason: '放學禮堂不能用' };
+            const yellowDates = ['2026-10-23', '2026-11-06', '2027-02-18'];
+            if (yellowDates.includes(dateStr)) return { allowed: true, color: 'yellow', reason: '特別時間表 (14:30)' };
+            return { allowed: true, color: 'normal', reason: '可安排課外活動' };
         }
 
-        const batch = writeBatch(db);
-        Object.keys(importedData).forEach(eca => {
-          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'eca_plans', eca);
-          batch.set(docRef, { 
-            ecaName: eca, 
-            dates: importedData[eca], 
-            lastUpdatedBy: "CSV 匯入", 
-            updatedAt: new Date().toISOString() 
-          }, { merge: true });
-        });
-
-        try {
-          await batch.commit(); 
-          showToast(`成功匯入並更新 ${Object.keys(importedData).length} 個活動項目！`, "success");
-          document.getElementById('csv-upload').value = '';
-        } catch(err) { showToast("匯入失敗：" + err.message, "error"); }
-      };
-      reader.readAsText(file);
-    }
-
-    // ==========================================
-    // 16. 匯出模組與選擇
-    // ==========================================
-    window.openExportModal = function() {
-      const activeEcas = Object.keys(scheduledDates);
-      if(activeEcas.length === 0) { showToast("目前沒有可匯出的資料！", "warning"); return; }
-      
-      const listContainer = document.getElementById('export-checkbox-list'); 
-      listContainer.innerHTML = '';
-      activeEcas.forEach(eca => {
-        const label = document.createElement('label');
-        label.className = 'flex items-center gap-2 p-2 bg-white border border-slate-200 rounded cursor-pointer hover:bg-slate-50 transition-colors';
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.value = eca;
-        cb.className = 'export-eca-cb w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500';
-        cb.checked = true;
-        const span = document.createElement('span');
-        span.className = 'text-xs font-semibold text-slate-700';
-        span.textContent = eca;
-        label.appendChild(cb);
-        label.appendChild(span);
-        listContainer.appendChild(label);
-      });
-      document.getElementById('export-modal').classList.remove('hidden');
-    }
-    window.closeExportModal = () => document.getElementById('export-modal').classList.add('hidden');
-    window.toggleAllExportCheckboxes = (check) => document.querySelectorAll('.export-eca-cb').forEach(cb => cb.checked = check);
-
-    window.exportSelectedData = function(type) {
-      const selectedEcas = Array.from(document.querySelectorAll('.export-eca-cb:checked')).map(cb => cb.value);
-      if(selectedEcas.length === 0) { showToast("請至少選擇一個活動項目", "warning"); return; }
-
-      const rows = [];
-      selectedEcas.forEach(eca => {
-        if (scheduledDates[eca]) {
-          Object.keys(scheduledDates[eca]).forEach(dateStr => {
-            rows.push({ ecaName: eca, date: dateStr, ...scheduledDates[eca][dateStr] });
-          });
+        // ============================================================
+        //  5. 渲染函數
+        // ============================================================
+        function renderAll() {
+            renderEcaList();
+            renderMonthTabs();
+            updateCalendarView();
+            renderSelectedDatesTable();
+            updateStats();
+            renderDailyView();
+            renderAdminLists();
+            updateScheduleBadge();
         }
-      });
-      
-      // 雙重排序：活動項目名稱優先 -> 日期其次
-      rows.sort((a, b) => a.ecaName.localeCompare(b.ecaName, 'zh-HK') || new Date(a.date) - new Date(b.date));
 
-      if (type === 'sheets') {
-        let tsv = "活動項目\t安排日期\t活動時間安排\t自定義備註\t負責同工\n";
-        rows.forEach(r => tsv += `${r.ecaName}\t${r.date}\t${r.timeNotes}\t${r.customNotes}\t${r.teacher}\n`);
-        navigator.clipboard.writeText(tsv).then(() => {
-          showToast("已複製 TSV 格式！請直接前往 Google Sheet 貼上 (Ctrl+V)", "success");
-          closeExportModal();
-        });
-      } 
-      else if (type === 'csv') {
-        let csvContent = "\ufeff活動項目,安排日期,活動時間安排,自定義備註,負責同工\n";
-        rows.forEach(r => csvContent += `"${r.ecaName}","${r.date}","${r.timeNotes}","${r.customNotes}","${r.teacher}"\n`);
-        triggerDownload(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }), 'csv');
-        closeExportModal();
-      } else if (type === 'word') {
-        // 使用與 exportToWord 相同的邏輯，但僅匯出所選
-        if (rows.length === 0) { showToast("無資料可匯出", "warning"); return; }
-        let tableRows = '';
-        rows.forEach(row => {
-          tableRows += `<tr>
-              <td style="border:1px solid #000; padding:8px;">${escapeHtml(row.ecaName)}</td>
-              <td style="border:1px solid #000; padding:8px;">${escapeHtml(row.date)}</td>
-              <td style="border:1px solid #000; padding:8px;">${escapeHtml(row.timeNotes)}</td>
-              <td style="border:1px solid #000; padding:8px;">${escapeHtml(row.customNotes)}</td>
-              <td style="border:1px solid #000; padding:8px;">${escapeHtml(row.teacher)}</td>
-          </tr>`;
-        });
-        const htmlContent = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-        <head><meta charset="utf-8"><title>ECA Planning</title></head><body>
-        <h2>慕德中學_ECA雲端規劃表</h2>
-        <table style="border-collapse: collapse; width: 100%; font-family: sans-serif; font-size: 14px;">
-            <thead>
-                <tr>
-                    <th style="border:1px solid #000; padding:8px; background-color:#e2e8f0; text-align:left;">活動項目</th>
-                    <th style="border:1px solid #000; padding:8px; background-color:#e2e8f0; text-align:left;">安排日期</th>
-                    <th style="border:1px solid #000; padding:8px; background-color:#e2e8f0; text-align:left;">活動時間安排</th>
-                    <th style="border:1px solid #000; padding:8px; background-color:#e2e8f0; text-align:left;">自定義備註/地點</th>
-                    <th style="border:1px solid #000; padding:8px; background-color:#e2e8f0; text-align:left;">負責同工</th>
-                </tr>
-            </thead>
-            <tbody>${tableRows}</tbody>
-        </table>
-        <p style="margin-top: 20px; font-size: 12px; color: #666;">導出日期: ${new Date().toLocaleDateString()}</p>
-        </body></html>`;
-        triggerDownload(new Blob(['\ufeff', htmlContent], { type: 'application/msword' }), 'doc');
-        closeExportModal();
-      }
-    }
+        function renderEcaList() {
+            const c = document.getElementById('eca-list-container');
+            c.innerHTML = '';
+            ecaItems.forEach(item => {
+                const isSel = selectedEca === item.name;
+                const count = scheduledDates[item.name] ? Object.keys(scheduledDates[item.name]).length : 0;
+                const div = document.createElement('div');
+                div.className = `eca-item flex items-center justify-between p-2.5 my-1 rounded-lg cursor-pointer transition-all ${isSel ? 'bg-blue-600 text-white shadow-md font-semibold' : 'bg-white hover:bg-blue-50 border border-slate-100 text-slate-700'}`;
+                div.onclick = () => selectEca(item.name);
+                div.innerHTML = `
+              <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full ${isSel ? 'bg-white' : 'bg-blue-500'}"></span>
+                <span class="text-xs truncate max-w-[200px]">${escapeHtml(item.name)}</span></div>
+              ${count > 0 ? `<span class="px-2 py-0.5 text-[10px] rounded-full font-bold ${isSel ? 'bg-blue-500 text-white' : 'bg-emerald-100 text-emerald-800'}">${count}堂</span>` : ''}
+            `;
+                c.appendChild(div);
+            });
+            document.getElementById('eca-count-badge').textContent = `${ecaItems.length} 個`;
+        }
 
-    // ==========================================
-    // 17. 匯出 CSV / Word (全部)
-    // ==========================================
-    function getExportRows() {
-      const rows = [];
-      Object.keys(scheduledDates).forEach(eca => {
-        Object.keys(scheduledDates[eca]).forEach(dateStr => {
-          rows.push({
-            ecaName: eca, date: dateStr,
-            timeNotes: scheduledDates[eca][dateStr].timeNotes,
-            customNotes: scheduledDates[eca][dateStr].customNotes || "",
-            teacher: scheduledDates[eca][dateStr].teacher || "未填寫"
-          });
-        });
-      });
-      return rows.sort((a, b) => new Date(a.date) - new Date(b.date));
-    }
+        window.filterEcas = function() {
+            const q = document.getElementById('search-eca').value.trim().toLowerCase();
+            document.querySelectorAll('.eca-item').forEach(el => {
+                el.classList.toggle('hidden', !el.innerText.toLowerCase().includes(q));
+            });
+        };
 
-    window.exportToCSV = function() {
-      const rows = getExportRows();
-      if (rows.length === 0) { showToast("尚未選取活動日期！", "warning"); return; }
-      let csvContent = "\ufeff活動項目,安排日期,活動時間安排,自定義備註,負責同工\n";
-      rows.forEach(row => {
-        csvContent += `"${row.ecaName}","${row.date}","${row.timeNotes}","${row.customNotes}","${row.teacher}"\n`;
-      });
-      triggerDownload(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }), 'csv');
-    }
+        function renderMonthTabs() {
+            const c = document.getElementById('month-tabs-container');
+            c.innerHTML = '';
+            const months = [
+                { year: 2026, month: 9, name: "9月" }, { year: 2026, month: 10, name: "10月" },
+                { year: 2026, month: 11, name: "11月" }, { year: 2026, month: 12, name: "12月" },
+                { year: 2027, month: 1, name: "1月" }, { year: 2027, month: 2, name: "2月" },
+                { year: 2027, month: 3, name: "3月" }, { year: 2027, month: 4, name: "4月" },
+                { year: 2027, month: 5, name: "5月" }, { year: 2027, month: 6, name: "6月" },
+                { year: 2027, month: 7, name: "7月" }
+            ];
+            months.forEach((m, idx) => {
+                const btn = document.createElement('button');
+                const sel = currentMonthIdx === idx;
+                btn.className = `px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${sel ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'}`;
+                btn.onclick = () => { currentMonthIdx = idx;
+                    renderAll(); };
+                btn.textContent = `${m.year}年 ${m.name}`;
+                c.appendChild(btn);
+            });
+        }
 
-    window.exportToWord = function() {
-      const rows = getExportRows();
-      if (rows.length === 0) { showToast("尚未選取活動日期！", "warning"); return; }
-      
-      let tableRows = '';
-      rows.forEach(row => {
-        tableRows += `<tr>
-            <td style="border:1px solid #000; padding:8px;">${escapeHtml(row.ecaName)}</td>
-            <td style="border:1px solid #000; padding:8px;">${escapeHtml(row.date)}</td>
-            <td style="border:1px solid #000; padding:8px;">${escapeHtml(row.timeNotes)}</td>
-            <td style="border:1px solid #000; padding:8px;">${escapeHtml(row.customNotes)}</td>
-            <td style="border:1px solid #000; padding:8px;">${escapeHtml(row.teacher)}</td>
-        </tr>`;
-      });
+        function selectEca(name) {
+            selectedEca = name;
+            document.getElementById('active-eca-label').textContent = `正在安排: ${name}`;
+            document.getElementById('active-eca-label').className = "bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-0.5 rounded-full";
+            renderAll();
+        }
 
-      const htmlContent = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-      <head><meta charset="utf-8"><title>ECA Planning</title></head><body>
-      <h2>慕德中學_ECA雲端規劃表</h2>
-      <table style="border-collapse: collapse; width: 100%; font-family: sans-serif; font-size: 14px;">
-          <thead>
-              <tr>
-                  <th style="border:1px solid #000; padding:8px; background-color:#e2e8f0; text-align:left;">活動項目</th>
-                  <th style="border:1px solid #000; padding:8px; background-color:#e2e8f0; text-align:left;">安排日期</th>
-                  <th style="border:1px solid #000; padding:8px; background-color:#e2e8f0; text-align:left;">活動時間安排</th>
-                  <th style="border:1px solid #000; padding:8px; background-color:#e2e8f0; text-align:left;">自定義備註/地點</th>
-                  <th style="border:1px solid #000; padding:8px; background-color:#e2e8f0; text-align:left;">負責同工</th>
-              </tr>
-          </thead>
-          <tbody>${tableRows}</tbody>
-      </table>
-      <p style="margin-top: 20px; font-size: 12px; color: #666;">導出日期: ${new Date().toLocaleDateString()}</p>
-      </body></html>`;
+        window.prevMonth = function() { if (currentMonthIdx > 0) { currentMonthIdx--;
+                renderAll(); } };
+        window.nextMonth = function() { if (currentMonthIdx < 10) { currentMonthIdx++;
+                renderAll(); } };
 
-      triggerDownload(new Blob(['\ufeff', htmlContent], { type: 'application/msword' }), 'doc');
-    }
+        function updateCalendarView() {
+            const months = [
+                { year: 2026, month: 9 }, { year: 2026, month: 10 }, { year: 2026, month: 11 }, { year: 2026, month: 12 },
+                { year: 2027, month: 1 }, { year: 2027, month: 2 }, { year: 2027, month: 3 }, { year: 2027, month: 4 },
+                { year: 2027, month: 5 }, { year: 2027, month: 6 }, { year: 2027, month: 7 }
+            ];
+            const target = months[currentMonthIdx] || months[0];
+            document.getElementById('current-month-title').textContent = `${target.year}年 ${target.month}月`;
+            const grid = document.getElementById('calendar-days-grid');
+            grid.innerHTML = '';
+            const firstDay = new Date(target.year, target.month - 1, 1).getDay();
+            const totalDays = new Date(target.year, target.month, 0).getDate();
+            for (let i = 0; i < firstDay; i++) {
+                const p = document.createElement('div');
+                p.className = 'bg-slate-50/50 rounded-xl border border-dashed border-slate-100 min-h-[48px]';
+                grid.appendChild(p);
+            }
+            for (let day = 1; day <= totalDays; day++) {
+                const dateStr = `${target.year}-${String(target.month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                const status = getDateStatus(target.year, target.month, day);
+                const isSched = selectedEca && scheduledDates[selectedEca] && scheduledDates[selectedEca][dateStr];
+                const cell = document.createElement('div');
+                let bg = 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700';
+                if (!status.allowed) bg = 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed select-none';
+                else if (status.color === 'yellow') bg = isSched ? 'bg-emerald-500 text-white border-emerald-600 shadow-md cursor-pointer' :
+                    'bg-amber-50 hover:bg-amber-100/80 border-amber-300 text-amber-900 cursor-pointer';
+                else if (status.color === 'pink') bg = isSched ? 'bg-emerald-500 text-white border-emerald-600 shadow-md cursor-pointer' :
+                    'bg-pink-50 hover:bg-pink-100/80 border-pink-300 text-pink-900 cursor-pointer';
+                else bg = isSched ? 'bg-emerald-500 text-white border-emerald-600 shadow-md cursor-pointer' :
+                    'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 cursor-pointer';
+                cell.className = `group relative rounded-xl p-2 min-h-[58px] border transition-all flex flex-col justify-between ${bg}`;
+                if (status.allowed) cell.onclick = () => toggleDateSelection(dateStr, status);
+                const smallText = isSched ? '已排活動' : status.color === 'yellow' ? '特別14:30' : status.color === 'pink' ?
+                    '禮堂暫停' : '';
+                const smallColor = isSched ? 'text-emerald-100' : !status.allowed ? 'text-slate-400' : status.color ===
+                    'yellow' ? 'text-amber-600' : status.color === 'pink' ? 'text-pink-600' : 'text-slate-400';
+                cell.innerHTML = `
+              <div class="flex justify-between items-center"><span class="font-extrabold text-sm">${day}</span>${isSched ? '<span class="w-1.5 h-1.5 rounded-full bg-white"></span>' : ''}</div>
+              <span class="text-[9px] mt-1 font-medium leading-tight truncate ${smallColor}">${smallText}</span>
+              <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-slate-950 text-white text-[10px] rounded py-1 px-2.5 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-10 shadow-lg">${escapeHtml(status.reason)}</div>
+            `;
+                grid.appendChild(cell);
+            }
+        }
 
-    function triggerDownload(blob, ext) {
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `慕德中學_ECA雲端規劃表_${new Date().toISOString().slice(0,10)}.${ext}`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      showToast(`成功下載完整 ${ext.toUpperCase()} 檔案！`, "success");
-    }
+        // ============================================================
+        //  6. 切換日期 (Firebase)
+        // ============================================================
+        async function toggleDateSelection(dateStr, status) {
+            if (!selectedEca) { showToast("請先在左方選擇要規劃的活動項目！", "warning"); return; }
+            const name = document.getElementById('teacher-name').value.trim();
+            if (!name) { showToast("請先填寫左上角「負責同工姓名」！", "warning");
+                document.getElementById('teacher-name').focus(); return; }
+            if (!currentUser) { showToast("尚未安全登入 Firebase。", "error"); return; }
+            const current = scheduledDates[selectedEca] ? { ...scheduledDates[selectedEca] } : {};
+            if (current[dateStr]) {
+                delete current[dateStr];
+            } else {
+                let timeNote = '常規課外活動時間';
+                if (status.color === 'yellow') timeNote = '特別時間表 (下午2時30分開始)';
+                else if (status.color === 'pink') timeNote = status.reason;
+                current[dateStr] = { timeNotes: timeNote, customNotes: '', teacher: name };
+            }
+            try {
+                const ref = doc(db, 'artifacts', APP_ID, 'public', 'data', 'eca_plans', selectedEca);
+                if (Object.keys(current).length === 0) await deleteDoc(ref);
+                else await setDoc(ref, { ecaName: selectedEca, dates: current, lastUpdatedBy: name, updatedAt: new Date()
+                        .toISOString() });
+                showToast(`已同步至雲端`, "success");
+            } catch (e) { showToast("同步失敗：" + e.message, "error"); }
+        }
 
-    // ==========================================
-    // 18. Toast 通知
-    // ==========================================
-    function showToast(message, type = "success") {
-      const container = document.getElementById('toast-container');
-      if (!container) return;
-      const toast = document.createElement('div');
-      let colors = type === "error" ? "bg-rose-50 text-rose-800 border-rose-200" :
-                   type === "warning" ? "bg-amber-50 text-amber-800 border-amber-200" :
-                   type === "info" ? "bg-blue-50 text-blue-800 border-blue-200" :
-                   "bg-emerald-50 text-emerald-800 border-emerald-200";
-      let icon = type === "error" ? "alert-octagon" : type === "warning" ? "alert-triangle" : type === "info" ? "info" : "check-circle";
-      toast.className = `flex items-center gap-2 px-4 py-3 rounded-xl border shadow-lg max-w-sm transition-all duration-300 transform translate-y-2 opacity-0 ${colors}`;
-      toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5 shrink-0"></i><span class="text-xs font-semibold">${escapeHtml(message)}</span>`;
-      container.appendChild(toast);
-      lucide.createIcons();
-      setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 50);
-      setTimeout(() => {
-        toast.classList.add('translate-y-2', 'opacity-0');
-        setTimeout(() => toast.remove(), 300);
-      }, 4000);
-    }
+        // ============================================================
+        //  7. 表格渲染 (含場地 datalist)
+        // ============================================================
+        function renderSelectedDatesTable() {
+            const tbody = document.getElementById('scheduled-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            const rows = [];
+            Object.keys(scheduledDates).forEach(eca => {
+                Object.keys(scheduledDates[eca]).forEach(dateStr => {
+                    rows.push({ ecaName: eca, date: dateStr, ...scheduledDates[eca][dateStr] });
+                });
+            });
+            rows.sort((a, b) => new Date(a.date) - new Date(b.date));
+            if (rows.length === 0) {
+                tbody.innerHTML =
+                    `<tr><td colspan="6" class="py-10 text-center text-slate-400 text-xs"><div class="flex flex-col items-center justify-center gap-2"><i data-lucide="inbox" class="w-10 h-10 text-slate-300"></i><p>雲端資料庫目前無記錄</p></div></td></tr>`;
+                lucide.createIcons();
+                return;
+            }
+            rows.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className =
+                `border-b border-slate-100 hover:bg-slate-50 transition-colors ${selectedEca === row.ecaName ? 'bg-blue-50/40' : ''}`;
+                // 活動名稱
+                const td1 = document.createElement('td');
+                td1.className = 'py-3.5 px-4';
+                const s1 = document.createElement('span');
+                s1.className = 'font-bold text-slate-800 text-xs';
+                s1.textContent = row.ecaName;
+                td1.appendChild(s1);
+                tr.appendChild(td1);
+                // 日期
+                const td2 = document.createElement('td');
+                td2.className = 'py-3.5 px-4 text-xs font-mono font-medium text-slate-600';
+                td2.textContent = row.date;
+                tr.appendChild(td2);
+                // 時間安排
+                const td3 = document.createElement('td');
+                td3.className = 'py-3.5 px-4';
+                const s3 = document.createElement('span');
+                const isSpecial = row.timeNotes && row.timeNotes.includes('特別');
+                const isPink = row.timeNotes && row.timeNotes.includes('禮堂');
+                s3.className =
+                    `text-xs px-2.5 py-1 rounded-full font-semibold ${isSpecial ? 'bg-amber-100 text-amber-800 border border-amber-200' : isPink ? 'bg-pink-100 text-pink-800 border border-pink-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}`;
+                s3.textContent = row.timeNotes || '常規';
+                td3.appendChild(s3);
+                tr.appendChild(td3);
+                // 場地 / 備註 (使用 datalist)
+                const td4 = document.createElement('td');
+                td4.className = 'py-3.5 px-4';
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = row.customNotes || '';
+                input.placeholder = '輸入或選擇場地...';
+                input.className = 'w-full text-xs px-2 py-1 bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500';
+                input.list = 'venue-datalist-global';
+                input.onchange = (e) => updateRowCustomNotes(row.ecaName, row.date, e.target.value);
+                td4.appendChild(input);
+                tr.appendChild(td4);
+                // 負責同工
+                const td5 = document.createElement('td');
+                td5.className = 'py-3.5 px-4 text-xs font-medium text-slate-500';
+                td5.textContent = row.teacher || '未填寫';
+                tr.appendChild(td5);
+                // 操作
+                const td6 = document.createElement('td');
+                td6.className = 'py-3.5 px-4 text-center';
+                const btn = document.createElement('button');
+                btn.className = 'p-1 hover:bg-rose-50 text-rose-500 rounded transition-colors';
+                btn.onclick = () => removeIndividualDate(row.ecaName, row.date);
+                const icon = document.createElement('i');
+                icon.setAttribute('data-lucide', 'trash-2');
+                icon.className = 'w-4 h-4 mx-auto';
+                btn.appendChild(icon);
+                td6.appendChild(btn);
+                tr.appendChild(td6);
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+            // 建立全域 datalist
+            updateVenueDatalist();
+        }
 
-    // ==========================================
-    // 19. 載入本地儲存 & 初始化
-    // ==========================================
-    const loadLocalStorageConfigs = () => {
-      const savedTeacher = localStorage.getItem('eca_teacher_name');
-      if (savedTeacher) {
-        document.getElementById('teacher-name').value = savedTeacher;
-        teacherName = savedTeacher;
-      }
-      document.getElementById('teacher-name').addEventListener('input', (e) => {
-        teacherName = e.target.value;
-        localStorage.setItem('eca_teacher_name', teacherName);
-      });
-    };
+        function updateVenueDatalist() {
+            let dl = document.getElementById('venue-datalist-global');
+            if (!dl) {
+                dl = document.createElement('datalist');
+                dl.id = 'venue-datalist-global';
+                document.body.appendChild(dl);
+            }
+            dl.innerHTML = '';
+            venueItems.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.name;
+                dl.appendChild(opt);
+            });
+        }
 
-    // 頁面載入
-    window.onload = function() {
-      lucide.createIcons();
-      loadLocalStorageConfigs();
-      renderEcaList();
-      renderMonthTabs();
-      updateCalendarView();
-      updateStats();
-      initFirebaseAndSync();
+        // ============================================================
+        //  8. 更新備註 / 場地
+        // ============================================================
+        window.updateRowCustomNotes = async function(eca, dateStr, val) {
+            if (!currentUser) return;
+            const name = document.getElementById('teacher-name').value.trim() || "未填寫";
+            if (scheduledDates[eca] && scheduledDates[eca][dateStr]) {
+                const cur = { ...scheduledDates[eca] };
+                cur[dateStr].customNotes = val;
+                try {
+                    const ref = doc(db, 'artifacts', APP_ID, 'public', 'data', 'eca_plans', eca);
+                    await setDoc(ref, { ecaName: eca, dates: cur, lastUpdatedBy: name, updatedAt: new Date().toISOString() });
+                    showToast("備註已同步", "success");
+                } catch (e) { showToast("同步失敗", "error"); }
+            }
+        };
 
-      // 將 closeExportModal 暴露給按鈕 (已使用 window)
-    };
+        window.removeIndividualDate = async function(eca, dateStr) {
+            if (!currentUser) return;
+            if (scheduledDates[eca] && scheduledDates[eca][dateStr]) {
+                const cur = { ...scheduledDates[eca] };
+                delete cur[dateStr];
+                const name = document.getElementById('teacher-name').value.trim() || "未填寫";
+                const ref = doc(db, 'artifacts', APP_ID, 'public', 'data', 'eca_plans', eca);
+                try {
+                    if (Object.keys(cur).length === 0) await deleteDoc(ref);
+                    else await setDoc(ref, { ecaName: eca, dates: cur, lastUpdatedBy: name, updatedAt: new Date()
+                            .toISOString() });
+                    showToast("已刪除該堂", "info");
+                } catch (e) { showToast("刪除失敗", "error"); }
+            }
+        };
 
-    // 頁面卸載時取消監聽
-    window.addEventListener('beforeunload', () => {
-      if (unsubscribeSnapshot) {
-        unsubscribeSnapshot();
-        unsubscribeSnapshot = null;
-      }
-    });
+        window.clearSelectedEcaDates = async function() {
+            if (!selectedEca || !currentUser) return;
+            if (scheduledDates[selectedEca]) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'eca_plans', selectedEca));
+                    showToast(`已清空 ${selectedEca}`, "info");
+                } catch (e) { showToast("清空失敗", "error"); }
+            }
+        };
 
-    // 暴露必要函數給全局 (onclick 使用)
-    window.selectEca = selectEca;
-    window.filterEcas = window.filterEcas;
-    window.prevMonth = window.prevMonth;
-    window.nextMonth = window.nextMonth;
-    window.renderDailyView = window.renderDailyView;
-    window.handleCSVImport = window.handleCSVImport;
-    window.openExportModal = window.openExportModal;
-    window.closeExportModal = window.closeExportModal;
-    window.toggleAllExportCheckboxes = window.toggleAllExportCheckboxes;
-    window.exportSelectedData = window.exportSelectedData;
-    window.exportToCSV = window.exportToCSV;
-    window.exportToWord = window.exportToWord;
-    window.clearSelectedEcaDates = window.clearSelectedEcaDates;
-    window.clearAllData = window.clearAllData;
-    window.updateRowCustomNotes = window.updateRowCustomNotes;
-    window.removeIndividualDate = window.removeIndividualDate;
+        window.clearAllData = async function() {
+            if (!currentUser) return;
+            const name = document.getElementById('teacher-name').value.trim();
+            if (!name) { showToast("請先填寫同工姓名！", "warning"); return; }
+            try {
+                const batch = writeBatch(db);
+                Object.keys(scheduledDates).forEach(eca => {
+                    batch.delete(doc(db, 'artifacts', APP_ID, 'public', 'data', 'eca_plans', eca));
+                });
+                await batch.commit();
+                showToast("所有資料已清空", "success");
+            } catch (e) { showToast("重設失敗", "error"); }
+        };
 
-  </script>
+        // ============================================================
+        //  9. 統計
+        // ============================================================
+        function updateStats() {
+            let total = 0,
+                active = 0,
+                special = 0;
+            Object.keys(scheduledDates).forEach(eca => {
+                active++;
+                Object.keys(scheduledDates[eca]).forEach(d => {
+                    total++;
+                    if (scheduledDates[eca][d].timeNotes && scheduledDates[eca][d].timeNotes.includes('特別'))
+                        special++;
+                });
+            });
+            document.getElementById('stat-total-dates').textContent = `${total} 堂`;
+            document.getElementById('stat-active-ecas').textContent = `${active} 組`;
+            document.getElementById('stat-special-dates').textContent = `${special} 堂`;
+            document.getElementById('stat-total-ecas').textContent = `${ecaItems.length} 個`;
+        }
+
+        function updateScheduleBadge() {
+            const count = Object.keys(scheduledDates).reduce((acc, eca) => acc + Object.keys(scheduledDates[eca]).length, 0);
+            document.getElementById('schedule-count-badge').textContent = `${count} 筆`;
+        }
+
+        // ============================================================
+        //  10. 單日查詢
+        // ============================================================
+        window.renderDailyView = function() {
+            const q = document.getElementById('daily-query-date').value;
+            const c = document.getElementById('daily-view-results');
+            if (!q) { c.innerHTML =
+                    `<div class="text-center py-6 text-slate-400 text-xs">請選擇日期進行查詢。</div>`; return; }
+            const acts = [];
+            Object.keys(scheduledDates).forEach(eca => {
+                if (scheduledDates[eca][q]) acts.push({ ecaName: eca, ...scheduledDates[eca][q] });
+            });
+            if (acts.length === 0) {
+                c.innerHTML =
+                    `<div class="text-center py-6 text-slate-500 text-sm font-medium">該日 (${escapeHtml(q)}) 暫無任何活動安排。</div>`;
+                return;
+            }
+            let html = `<h4 class="font-bold text-sm text-slate-800 mb-2 border-b border-slate-200 pb-2">${escapeHtml(q)} 共有 ${acts.length} 項活動</h4>`;
+            acts.forEach(a => {
+                html += `
+              <div class="bg-white p-3 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm mb-2">
+                <div><p class="font-bold text-blue-700 text-sm">${escapeHtml(a.ecaName)}</p><p class="text-xs text-slate-500 mt-1">${escapeHtml(a.timeNotes)}</p></div>
+                <div class="text-left sm:text-right"><p class="text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-1 rounded inline-block mb-1"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1"></i>${escapeHtml(a.customNotes || '未填寫場地')}</p><p class="text-[10px] text-slate-400">負責人: ${escapeHtml(a.teacher)}</p></div>
+              </div>`;
+            });
+            c.innerHTML = html;
+            lucide.createIcons();
+        };
+
+        // ============================================================
+        //  11. 摺疊控制
+        // ============================================================
+        window.toggleSchedulePanel = function() {
+            isScheduleOpen = !isScheduleOpen;
+            const body = document.getElementById('schedule-collapse-body');
+            const icon = document.getElementById('collapse-icon');
+            const indicator = document.getElementById('collapse-indicator');
+            if (isScheduleOpen) {
+                body.classList.add('open');
+                icon.style.transform = 'rotate(180deg)';
+                indicator.textContent = '▲ 收合';
+            } else {
+                body.classList.remove('open');
+                icon.style.transform = 'rotate(0deg)';
+                indicator.textContent = '▼ 展開';
+            }
+        };
+
+        // ============================================================
+        //  12. CSV 匯入
+        // ============================================================
+        window.handleCSVImport = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const text = e.target.result;
+                const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+                const rows = [];
+                for (let line of lines) {
+                    const fields = [];
+                    let cur = '',
+                        inQ = false;
+                    for (let i = 0; i < line.length; i++) {
+                        const ch = line[i];
+                        if (ch === '"') inQ = !inQ;
+                        else if (ch === ',' && !inQ) { fields.push(cur.trim());
+                            cur = ''; } else cur += ch;
+                    }
+                    fields.push(cur.trim());
+                    if (fields.length >= 5 && fields[0] && !fields[0].includes('活動')) rows.push(fields);
+                }
+                if (rows.length === 0) { showToast("無法解析 CSV 格式", "error"); return; }
+                const imported = {};
+                rows.forEach(row => {
+                    const eca = row[0] || '',
+                        date = row[1] || '';
+                    if (!eca || !date) return;
+                    if (!imported[eca]) imported[eca] = {};
+                    imported[eca][date] = { timeNotes: row[2] || '常規課外活動時間', customNotes: row[3] || '',
+                        teacher: row[4] || 'CSV 匯入' };
+                });
+                if (Object.keys(imported).length === 0) { showToast("沒有有效資料", "error"); return; }
+                const batch = writeBatch(db);
+                Object.keys(imported).forEach(eca => {
+                    const ref = doc(db, 'artifacts', APP_ID, 'public', 'data', 'eca_plans', eca);
+                    batch.set(ref, { ecaName: eca, dates: imported[eca], lastUpdatedBy: "CSV 匯入",
+                        updatedAt: new Date().toISOString() }, { merge: true });
+                });
+                try { await batch.commit();
+                    showToast(`匯入 ${Object.keys(imported).length} 個活動`, "success");
+                    document.getElementById('csv-upload').value = ''; } catch (err) { showToast("匯入失敗", "error"); }
+            };
+            reader.readAsText(file);
+        };
+
+        // ============================================================
+        //  13. 匯出模組
+        // ============================================================
+        window.openExportModal = function() {
+            const active = Object.keys(scheduledDates);
+            if (active.length === 0) { showToast("沒有可匯出的資料", "warning"); return; }
+            const container = document.getElementById('export-checkbox-list');
+            container.innerHTML = '';
+            active.forEach(eca => {
+                const label = document.createElement('label');
+                label.className =
+                'flex items-center gap-2 p-2 bg-white border border-slate-200 rounded cursor-pointer hover:bg-slate-50 transition-colors';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.value = eca;
+                cb.className = 'export-eca-cb w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500';
+                cb.checked = true;
+                const span = document.createElement('span');
+                span.className = 'text-xs font-semibold text-slate-700';
+                span.textContent = eca;
+                label.appendChild(cb);
+                label.appendChild(span);
+                container.appendChild(label);
+            });
+            document.getElementById('export-modal').classList.remove('hidden');
+        };
+        window.closeExportModal = function() { document.getElementById('export-modal').classList.add('hidden'); };
+        window.toggleAllExportCheckboxes = function(check) {
+            document.querySelectorAll('.export-eca-cb').forEach(cb => cb.checked = check);
+        };
+
+        function getExportRows(selectedEcas) {
+            const rows = [];
+            selectedEcas.forEach(eca => {
+                if (scheduledDates[eca]) {
+                    Object.keys(scheduledDates[eca]).forEach(d => {
+                        rows.push({ ecaName: eca, date: d, ...scheduledDates[eca][d] });
+                    });
+                }
+            });
+            rows.sort((a, b) => a.ecaName.localeCompare(b.ecaName, 'zh-HK') || new Date(a.date) - new Date(b.date));
+            return rows;
+        }
+
+        window.exportSelectedData = function(type) {
+            const selected = Array.from(document.querySelectorAll('.export-eca-cb:checked')).map(cb => cb.value);
+            if (selected.length === 0) { showToast("請至少選擇一個活動", "warning"); return; }
+            const rows = getExportRows(selected);
+            if (rows.length === 0) { showToast("無資料可匯出", "warning"); return; }
+            if (type === 'sheets') {
+                let tsv = "活動項目\t安排日期\t活動時間安排\t場地/備註\t負責同工\n";
+                rows.forEach(r => tsv += `${r.ecaName}\t${r.date}\t${r.timeNotes}\t${r.customNotes}\t${r.teacher}\n`);
+                navigator.clipboard.writeText(tsv).then(() => { showToast("已複製 TSV 格式！", "success");
+                    closeExportModal(); });
+            } else if (type === 'csv') {
+                let csv = "\ufeff活動項目,安排日期,活動時間安排,場地/備註,負責同工\n";
+                rows.forEach(r => csv += `"${r.ecaName}","${r.date}","${r.timeNotes}","${r.customNotes}","${r.teacher}"\n`);
+                triggerDownload(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), 'csv');
+                closeExportModal();
+            } else if (type === 'word') {
+                let tableRows = '';
+                rows.forEach(r => {
+                    tableRows += `<tr><td style="border:1px solid #000;padding:6px;">${escapeHtml(r.ecaName)}</td><td style="border:1px solid #000;padding:6px;">${escapeHtml(r.date)}</td><td style="border:1px solid #000;padding:6px;">${escapeHtml(r.timeNotes)}</td><td style="border:1px solid #000;padding:6px;">${escapeHtml(r.customNotes)}</td><td style="border:1px solid #000;padding:6px;">${escapeHtml(r.teacher)}</td></tr>`;
+                });
+                const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+              <head><meta charset="utf-8"><title>ECA</title></head><body>
+              <h2>慕德中學 ECA 規劃表</h2>
+              <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:13px;">
+                <thead><tr><th style="border:1px solid #000;padding:6px;background:#e2e8f0;">活動項目</th><th style="border:1px solid #000;padding:6px;background:#e2e8f0;">安排日期</th><th style="border:1px solid #000;padding:6px;background:#e2e8f0;">活動時間</th><th style="border:1px solid #000;padding:6px;background:#e2e8f0;">場地/備註</th><th style="border:1px solid #000;padding:6px;background:#e2e8f0;">負責同工</th></tr></thead>
+                <tbody>${tableRows}</tbody>
+              </table>
+              <p style="margin-top:16px;font-size:12px;color:#666;">匯出日期: ${new Date().toLocaleDateString()}</p>
+              </body></html>`;
+                triggerDownload(new Blob(['\ufeff', html], { type: 'application/msword' }), 'doc');
+                closeExportModal();
+            }
+        };
+
+        window.exportToCSV = function() {
+            const rows = getExportRows(Object.keys(scheduledDates));
+            if (rows.length === 0) { showToast("無資料", "warning"); return; }
+            let csv = "\ufeff活動項目,安排日期,活動時間安排,場地/備註,負責同工\n";
+            rows.forEach(r => csv += `"${r.ecaName}","${r.date}","${r.timeNotes}","${r.customNotes}","${r.teacher}"\n`);
+            triggerDownload(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), 'csv');
+        };
+
+        window.exportToWord = function() {
+            const rows = getExportRows(Object.keys(scheduledDates));
+            if (rows.length === 0) { showToast("無資料", "warning"); return; }
+            let tableRows = '';
+            rows.forEach(r => {
+                tableRows += `<tr><td style="border:1px solid #000;padding:6px;">${escapeHtml(r.ecaName)}</td><td style="border:1px solid #000;padding:6px;">${escapeHtml(r.date)}</td><td style="border:1px solid #000;padding:6px;">${escapeHtml(r.timeNotes)}</td><td style="border:1px solid #000;padding:6px;">${escapeHtml(r.customNotes)}</td><td style="border:1px solid #000;padding:6px;">${escapeHtml(r.teacher)}</td></tr>`;
+            });
+            const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+            <head><meta charset="utf-8"><title>ECA</title></head><body>
+            <h2>慕德中學 ECA 規劃表</h2>
+            <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:13px;">
+              <thead><tr><th style="border:1px solid #000;padding:6px;background:#e2e8f0;">活動項目</th><th style="border:1px solid #000;padding:6px;background:#e2e8f0;">安排日期</th><th style="border:1px solid #000;padding:6px;background:#e2e8f0;">活動時間</th><th style="border:1px solid #000;padding:6px;background:#e2e8f0;">場地/備註</th><th style="border:1px solid #000;padding:6px;background:#e2e8f0;">負責同工</th></tr></thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+            <p style="margin-top:16px;font-size:12px;color:#666;">匯出日期: ${new Date().toLocaleDateString()}</p>
+            </body></html>`;
+            triggerDownload(new Blob(['\ufeff', html], { type: 'application/msword' }), 'doc');
+        };
+
+        function triggerDownload(blob, ext) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `慕德中學_ECA_${new Date().toISOString().slice(0,10)}.${ext}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast(`下載完成`, "success");
+        }
+
+        // ============================================================
+        //  14. 管理員面板
+        // ============================================================
+        window.openAdminPanel = function() {
+            document.getElementById('admin-panel').classList.remove('hidden');
+            document.getElementById('admin-auth-area').style.display = 'flex';
+            document.getElementById('admin-content-area').classList.add('hidden');
+            document.getElementById('admin-password-input').value = '';
+            document.getElementById('admin-auth-msg').textContent = '';
+            renderAdminLists();
+        };
+        window.closeAdminPanel = function() {
+            document.getElementById('admin-panel').classList.add('hidden');
+            isAdminVerified = false;
+        };
+
+        window.verifyAdminPassword = function() {
+            const pwd = document.getElementById('admin-password-input').value.trim();
+            // 預設密碼 (可修改)
+            if (pwd === 'admin123') {
+                isAdminVerified = true;
+                document.getElementById('admin-auth-area').style.display = 'none';
+                document.getElementById('admin-content-area').classList.remove('hidden');
+                renderAdminLists();
+                showToast("驗證成功", "success");
+            } else {
+                document.getElementById('admin-auth-msg').textContent = '❌ 密碼錯誤，請再試一次。';
+            }
+        };
+
+        // 切換分頁
+        window.switchAdminTab = function(tab) {
+            document.querySelectorAll('.admin-panel-tab').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.admin-panel-tab[data-tab="${tab}"]`).classList.add('active');
+            document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`admin-tab-${tab}`).classList.remove('hidden');
+            renderAdminLists();
+        };
+
+        // 渲染管理列表
+        function renderAdminLists() {
+            // 活動列表
+            const container = document.getElementById('activity-list-admin');
+            container.innerHTML = '';
+            ecaItems.forEach(item => {
+                const div = document.createElement('div');
+                div.className =
+                    'flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors';
+                div.innerHTML = `
+              <span class="text-sm font-medium text-slate-700">${escapeHtml(item.name)}</span>
+              <div class="flex gap-1.5">
+                <button onclick="editActivity('${item.id}','${escapeHtml(item.name)}')" class="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                <button onclick="deleteActivity('${item.id}')" class="p-1 text-rose-600 hover:bg-rose-100 rounded transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+              </div>
+            `;
+                container.appendChild(div);
+            });
+            // 場地列表
+            const vc = document.getElementById('venue-list-admin');
+            vc.innerHTML = '';
+            venueItems.forEach(item => {
+                const span = document.createElement('span');
+                span.className =
+                    'venue-badge flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full text-sm';
+                span.innerHTML = `
+              ${escapeHtml(item.name)}
+              <button onclick="editVenue('${item.id}','${escapeHtml(item.name)}')" class="text-indigo-500 hover:text-indigo-800 ml-1"><i data-lucide="pencil" class="w-3 h-3"></i></button>
+              <button onclick="deleteVenue('${item.id}')" class="text-rose-500 hover:text-rose-700"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+            `;
+                vc.appendChild(span);
+            });
+            lucide.createIcons();
+        }
+
+        // ----- 活動 CRUD -----
+        window.showAddActivityForm = function() {
+            document.getElementById('activity-form-container').classList.remove('hidden');
+            document.getElementById('edit-activity-id').value = '';
+            document.getElementById('activity-form-input').value = '';
+            document.getElementById('activity-form-input').focus();
+        };
+
+        window.editActivity = function(id, name) {
+            document.getElementById('activity-form-container').classList.remove('hidden');
+            document.getElementById('edit-activity-id').value = id;
+            document.getElementById('activity-form-input').value = name;
+            document.getElementById('activity-form-input').focus();
+        };
+
+        window.cancelActivityForm = function() {
+            document.getElementById('activity-form-container').classList.add('hidden');
+            document.getElementById('edit-activity-id').value = '';
+            document.getElementById('activity-form-input').value = '';
+        };
+
+        window.saveActivity = async function() {
+            const id = document.getElementById('edit-activity-id').value;
+            const name = document.getElementById('activity-form-input').value.trim();
+            if (!name) { showToast("請輸入活動名稱", "warning"); return; }
+            if (!isAdminVerified) { showToast("請先驗證管理員身份", "warning"); return; }
+            try {
+                const ref = doc(db, 'artifacts', APP_ID, 'public', 'data', 'activities', id || doc(collection(db,
+                    'artifacts', APP_ID, 'public', 'data', 'activities')).id);
+                await setDoc(ref, { name });
+                showToast(id ? "活動已更新" : "活動已新增", "success");
+                cancelActivityForm();
+                await loadActivities();
+                renderAll();
+            } catch (e) { showToast("操作失敗", "error"); }
+        };
+
+        window.deleteActivity = async function(id) {
+            if (!isAdminVerified) { showToast("請先驗證管理員身份", "warning"); return; }
+            if (!confirm("確定要刪除這個活動嗎？")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'activities', id));
+                showToast("活動已刪除", "info");
+                await loadActivities();
+                renderAll();
+            } catch (e) { showToast("刪除失敗", "error"); }
+        };
+
+        // ----- 場地 CRUD -----
+        window.showAddVenueForm = function() {
+            document.getElementById('venue-form-container').classList.remove('hidden');
+            document.getElementById('edit-venue-id').value = '';
+            document.getElementById('venue-form-input').value = '';
+            document.getElementById('venue-form-input').focus();
+        };
+
+        window.editVenue = function(id, name) {
+            document.getElementById('venue-form-container').classList.remove('hidden');
+            document.getElementById('edit-venue-id').value = id;
+            document.getElementById('venue-form-input').value = name;
+            document.getElementById('venue-form-input').focus();
+        };
+
+        window.cancelVenueForm = function() {
+            document.getElementById('venue-form-container').classList.add('hidden');
+            document.getElementById('edit-venue-id').value = '';
+            document.getElementById('venue-form-input').value = '';
+        };
+
+        window.saveVenue = async function() {
+            const id = document.getElementById('edit-venue-id').value;
+            const name = document.getElementById('venue-form-input').value.trim();
+            if (!name) { showToast("請輸入場地名稱", "warning"); return; }
+            if (!isAdminVerified) { showToast("請先驗證管理員身份", "warning"); return; }
+            try {
+                const ref = doc(db, 'artifacts', APP_ID, 'public', 'data', 'venues', id || doc(collection(db,
+                    'artifacts', APP_ID, 'public', 'data', 'venues')).id);
+                await setDoc(ref, { name });
+                showToast(id ? "場地已更新" : "場地已新增", "success");
+                cancelVenueForm();
+                await loadVenues();
+                renderAll();
+            } catch (e) { showToast("操作失敗", "error"); }
+        };
+
+        window.deleteVenue = async function(id) {
+            if (!isAdminVerified) { showToast("請先驗證管理員身份", "warning"); return; }
+            if (!confirm("確定要刪除這個場地嗎？")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'venues', id));
+                showToast("場地已刪除", "info");
+                await loadVenues();
+                renderAll();
+            } catch (e) { showToast("刪除失敗", "error"); }
+        };
+
+        // ============================================================
+        //  15. 初始化
+        // ============================================================
+        async function init() {
+            // 載入本地儲存
+            const saved = localStorage.getItem('eca_teacher_name');
+            if (saved) { document.getElementById('teacher-name').value = saved;
+                teacherName = saved; }
+            document.getElementById('teacher-name').addEventListener('input', (e) => {
+                teacherName = e.target.value;
+                localStorage.setItem('eca_teacher_name', teacherName);
+            });
+
+            // 載入活動 & 場地
+            await loadActivities();
+            await loadVenues();
+
+            // 初始化 Firebase 連線與同步
+            await initFirebase();
+
+            // 渲染
+            renderAll();
+            lucide.createIcons();
+
+            // 預設摺疊關閉
+            document.getElementById('schedule-collapse-body').classList.remove('open');
+            document.getElementById('collapse-icon').style.transform = 'rotate(0deg)';
+            document.getElementById('collapse-indicator').textContent = '▼ 展開';
+            isScheduleOpen = false;
+        }
+
+        init();
+
+        // 暴露必要函數給全域
+        window.selectEca = selectEca;
+        window.renderDailyView = window.renderDailyView;
+        window.handleCSVImport = window.handleCSVImport;
+        window.openExportModal = window.openExportModal;
+        window.closeExportModal = window.closeExportModal;
+        window.toggleAllExportCheckboxes = window.toggleAllExportCheckboxes;
+        window.exportSelectedData = window.exportSelectedData;
+        window.exportToCSV = window.exportToCSV;
+        window.exportToWord = window.exportToWord;
+        window.clearSelectedEcaDates = window.clearSelectedEcaDates;
+        window.clearAllData = window.clearAllData;
+        window.updateRowCustomNotes = window.updateRowCustomNotes;
+        window.removeIndividualDate = window.removeIndividualDate;
+        window.toggleSchedulePanel = window.toggleSchedulePanel;
+        window.filterEcas = window.filterEcas;
+        window.prevMonth = window.prevMonth;
+        window.nextMonth = window.nextMonth;
+        window.openAdminPanel = window.openAdminPanel;
+        window.closeAdminPanel = window.closeAdminPanel;
+        window.verifyAdminPassword = window.verifyAdminPassword;
+        window.switchAdminTab = window.switchAdminTab;
+        window.showAddActivityForm = window.showAddActivityForm;
+        window.editActivity = window.editActivity;
+        window.cancelActivityForm = window.cancelActivityForm;
+        window.saveActivity = window.saveActivity;
+        window.deleteActivity = window.deleteActivity;
+        window.showAddVenueForm = window.showAddVenueForm;
+        window.editVenue = window.editVenue;
+        window.cancelVenueForm = window.cancelVenueForm;
+        window.saveVenue = window.saveVenue;
+        window.deleteVenue = window.deleteVenue;
+    </script>
 </body>
 </html>
