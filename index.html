@@ -284,7 +284,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id="scheduled-table-body">
-                                        <tr><td colspan="6" class="py-8 text-center text-slate-400 text-xs"><div class="flex flex-col items-center justify-center gap-2"><i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i><span>載入雲端資料中，或尚未選擇任何日期。</span></div></td></tr>
+                                        <tr><td colspan="6" class="py-8 text-center text-slate-400 text-xs"><div class="flex flex-col items-center justify-center gap-2"><i data-lucide="inbox" class="w-10 h-10 text-slate-300"></i><span>載入雲端資料中，或尚未選擇任何日期。</span></div></td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -457,8 +457,8 @@
         let selectedEca = null;
         let scheduledDates = {}; // { ecaName: { dateStr: { timeNotes, customNotes, teacher } } }
         let teacherName = "";
-        let ecaItems = []; // 從 Firebase 載入
-        let venueItems = []; // 從 Firebase 載入
+        let ecaItems = []; // 從 Firebase 載入，若無則使用預設
+        let venueItems = []; // 從 Firebase 載入，若無則使用預設
         let isAdminVerified = false;
         let isScheduleOpen = false; // 摺疊狀態
 
@@ -491,6 +491,27 @@
         }
 
         // ============================================================
+        //  預設資料
+        // ============================================================
+        const DEFAULT_ACTIVITIES = [
+            "學生團契(星期三)", "基督少年軍(星期三)", "敬拜隊(星期三)",
+            "AI 影片創作課程(星期四)", "花式編程無人機隊(星期五)",
+            "中文辯論隊(星期四)", "英語辯論隊(星期二)", "慕德棋藝隊(星期五)",
+            "粵普朗誦隊(星期四)", "藝文社(星期一)", "法語班(星期四)",
+            "德語班(星期四)", "日語班(星期五)", "韓語班(星期五)",
+            "越野跑隊(星期六)", "籃球隊(星期二、五)", "足球隊(星期一、五)",
+            "男子排球隊(星期一、五)", "女子排球隊(星期二、四)",
+            "乒乓球隊(星期二)", "羽毛球隊(星期一、四)", "獨木舟隊 (星期二)",
+            "運動攀登隊(星期一)", "爵士舞班(星期一)", "陶藝班(星期一)",
+            "校園電視台 (星期一)", "電繪班(星期二)", "英語話劇團(星期四)",
+            "攝影隊(星期二)", "合唱團(星期五)", "慕德流行音樂團(星期四)",
+            "小提琴或中提琴班(星期一)", "木管樂班(星期一)",
+            "電結他或低音結他班(星期一)", "公益少年團(星期五)",
+            "僕人領袖義工團(不定期)"
+        ];
+        const DEFAULT_VENUES = ["禮堂", "操場", "音樂室", "美術室", "電腦室", "圖書館", "舞蹈室", "多用途室", "課室 (待定)"];
+
+        // ============================================================
         //  1. 載入活動列表 & 場地列表 (從 Firebase)
         // ============================================================
         async function loadActivities() {
@@ -498,36 +519,30 @@
                 const snap = await getDocs(collection(db, 'artifacts', APP_ID, 'public', 'data', 'activities'));
                 const list = [];
                 snap.forEach(d => { list.push({ id: d.id, name: d.data().name }); });
-                if (list.length === 0) {
-                    // 若無資料，寫入預設
-                    const defaults = [
-                        "學生團契(星期三)", "基督少年軍(星期三)", "敬拜隊(星期三)",
-                        "AI 影片創作課程(星期四)", "花式編程無人機隊(星期五)",
-                        "中文辯論隊(星期四)", "英語辯論隊(星期二)", "慕德棋藝隊(星期五)",
-                        "粵普朗誦隊(星期四)", "藝文社(星期一)", "法語班(星期四)",
-                        "德語班(星期四)", "日語班(星期五)", "韓語班(星期五)",
-                        "越野跑隊(星期六)", "籃球隊(星期二、五)", "足球隊(星期一、五)",
-                        "男子排球隊(星期一、五)", "女子排球隊(星期二、四)",
-                        "乒乓球隊(星期二)", "羽毛球隊(星期一、四)", "獨木舟隊 (星期二)",
-                        "運動攀登隊(星期一)", "爵士舞班(星期一)", "陶藝班(星期一)",
-                        "校園電視台 (星期一)", "電繪班(星期二)", "英語話劇團(星期四)",
-                        "攝影隊(星期二)", "合唱團(星期五)", "慕德流行音樂團(星期四)",
-                        "小提琴或中提琴班(星期一)", "木管樂班(星期一)",
-                        "電結他或低音結他班(星期一)", "公益少年團(星期五)",
-                        "僕人領袖義工團(不定期)"
-                    ];
+                if (list.length > 0) {
+                    ecaItems = list;
+                    return list;
+                } else {
+                    // 無資料：使用預設並嘗試寫入
+                    console.warn('活動列表為空，使用預設並寫入 Firebase');
                     const batch = writeBatch(db);
-                    defaults.forEach(n => {
+                    DEFAULT_ACTIVITIES.forEach(n => {
                         const ref = doc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'activities'));
                         batch.set(ref, { name: n });
                     });
                     await batch.commit();
+                    // 重新讀取
                     const snap2 = await getDocs(collection(db, 'artifacts', APP_ID, 'public', 'data', 'activities'));
-                    snap2.forEach(d => { list.push({ id: d.id, name: d.data().name }); });
+                    const list2 = [];
+                    snap2.forEach(d => { list2.push({ id: d.id, name: d.data().name }); });
+                    ecaItems = list2.length ? list2 : DEFAULT_ACTIVITIES.map(n => ({ id: null, name: n }));
+                    return ecaItems;
                 }
-                ecaItems = list;
-                return list;
-            } catch (e) { console.error("載入活動失敗", e); return []; }
+            } catch (e) {
+                console.error("載入活動失敗，使用預設", e);
+                ecaItems = DEFAULT_ACTIVITIES.map(n => ({ id: null, name: n }));
+                return ecaItems;
+            }
         }
 
         async function loadVenues() {
@@ -535,20 +550,28 @@
                 const snap = await getDocs(collection(db, 'artifacts', APP_ID, 'public', 'data', 'venues'));
                 const list = [];
                 snap.forEach(d => { list.push({ id: d.id, name: d.data().name }); });
-                if (list.length === 0) {
-                    const defaults = ["禮堂", "操場", "音樂室", "美術室", "電腦室", "圖書館", "舞蹈室", "多用途室", "課室 (待定)"];
+                if (list.length > 0) {
+                    venueItems = list;
+                    return list;
+                } else {
+                    console.warn('場地列表為空，使用預設並寫入 Firebase');
                     const batch = writeBatch(db);
-                    defaults.forEach(n => {
+                    DEFAULT_VENUES.forEach(n => {
                         const ref = doc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'venues'));
                         batch.set(ref, { name: n });
                     });
                     await batch.commit();
                     const snap2 = await getDocs(collection(db, 'artifacts', APP_ID, 'public', 'data', 'venues'));
-                    snap2.forEach(d => { list.push({ id: d.id, name: d.data().name }); });
+                    const list2 = [];
+                    snap2.forEach(d => { list2.push({ id: d.id, name: d.data().name }); });
+                    venueItems = list2.length ? list2 : DEFAULT_VENUES.map(n => ({ id: null, name: n }));
+                    return venueItems;
                 }
-                venueItems = list;
-                return list;
-            } catch (e) { console.error("載入場地失敗", e); return []; }
+            } catch (e) {
+                console.error("載入場地失敗，使用預設", e);
+                venueItems = DEFAULT_VENUES.map(n => ({ id: null, name: n }));
+                return venueItems;
+            }
         }
 
         // ============================================================
@@ -1359,7 +1382,7 @@
                 localStorage.setItem('eca_teacher_name', teacherName);
             });
 
-            // 載入活動 & 場地
+            // 先載入活動與場地（確保列表存在）
             await loadActivities();
             await loadVenues();
 
